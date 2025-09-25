@@ -17,6 +17,7 @@ import {
   OverallScoreCard,
   AIChatUpsellCard,
 } from "./ui";
+import DownloadReportButton from "./ui/DownloadReportButton";
 import { Protect, useUser } from "@clerk/nextjs";
 import AIChat from "@/components/AIChat";
 
@@ -77,21 +78,18 @@ export default function ReportSummary({ params }: ReportSummaryProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <SummaryHeader seoReport={seoReport} />
-
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 space-y-8 lg:space-y-12">
+        <DownloadReportButton seoReport={seoReport} />
         <OverallScoreCard seoReport={seoReport} />
         <KeyMetricsGrid seoReport={seoReport} />
-
         {/* Temporarily disabled for development - Enable when Clerk billing is configured */}
         {/* <Protect plan="pro" fallback={<AIChatUpsellCard />}> */}
-          <AIChat seoReportId={id} />
+        <AIChat seoReportId={id} />
         {/* </Protect> */}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
           <SourceDistributionChart seoReport={seoReport} />
           <CompetitorStrengthCard seoReport={seoReport} />
         </div>
-
         <RecommendationsCard seoReport={seoReport} />
         <KeywordsAnalysisGrid seoReport={seoReport} />
         <KeyInsightsGrid seoReport={seoReport} />
