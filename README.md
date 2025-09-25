@@ -1,6 +1,6 @@
 
 <div align="center">
-  <img src="/public/rankora_logo.png" alt="Rankora Logo" width="100" height="100" style="border-radius:50%;margin-bottom:16px;" />
+  <img src="/public/rankora_logo.png" alt="Rankora Logo" width="180" height="180" style="border-radius:50%;margin-bottom:24px;" />
 </div>
 
 # RANKORA AI
@@ -65,13 +65,7 @@ Huminary Labs creates next-generation AI tools for marketing, automation, and bu
 - **Smart Retry Logic** for failed analyses without re-processing data
 - **Evidence-Based Reports** with source attribution and quotesrehensive SEO analysis platform that generates beautiful, data-driven reports powered by advanced AI. Built with Next.js 15, Clerk authentication, Convex backend, and AI-driven analysis.
 
-## 👇🏼 DO THIS Before you get started
 
-> Note: Using the referral links below helps support the development of this project through affiliate partnerships, allowing me to provide these tutorials for free! (You also get FREE Credits and $20 in BrightData)
-
-### 0) Get the Entire FREE Source Code
-
-Get the complete code for **FREE** here --> [SOURCE CODE](https://www.papareact.com/ai-marketing-saas-form)
 
 ### 1) Set up Clerk
 
@@ -311,97 +305,25 @@ npm run dev
 - **Bright Data** for web scraping
 - **Vercel AI SDK** for type-safe AI completions and real-time streaming chat responses
 
-## 🚀 Join the World's Best Developer Course & Community - Zero to Full Stack Hero!
 
-### Transform Your Career with Modern Full-Stack Development
-
-Ready to build production-ready applications like this SEO Reports Generator? Join **Zero to Full Stack Hero** - the ultimate course that teaches you to build real-world, revenue-generating applications using the latest technologies.
-
-### 🎯 What You'll Learn:
-
-- **Next.js 15 & React 19** - Master the latest features and App Router
-- **AI Integration** - Build intelligent apps with OpenAI, Claude, and custom AI workflows
-- **Full-Stack Architecture** - From frontend to backend, databases to deployment
-- **Modern Authentication** - Clerk, Auth0, and custom auth solutions
-- **Database Mastery** - SQL, NoSQL, Prisma, Convex, and more
-- **Payment Integration** - Stripe, subscription models, and billing systems
-- **Real-Time Features** - WebSockets, live updates, and collaborative apps
-- **Deployment & DevOps** - Vercel, AWS, Docker, and CI/CD pipelines
-
-### 🏗️ Build 12+ Production Apps Including:
-
-- **AI-Powered SaaS Platforms** (like this SEO tool)
-- **E-commerce Marketplaces** with payment processing
-- **Social Media Applications** with real-time features
-- **Productivity Tools** with team collaboration
-- **Data Analytics Dashboards** with beautiful visualizations
-- **Mobile Apps** with React Native and Expo
-
-### 👥 Join the PAPAFAM Community:
-
-- **1,000+ Active Developers** helping each other succeed
-- **Weekly Live Coding Sessions** with Sonny Sangha
-- **Code Reviews & Feedback** from industry professionals
-- **Job Placement Support** and career guidance
-- **Exclusive Discord Community** with 24/7 support
-- **Networking Opportunities** with like-minded developers
-
-### 💼 Career Transformation:
-
-- **$50k-$150k+ Salary Increases** reported by graduates
-- **Portfolio Projects** that impress employers
-- **Interview Preparation** and technical assessment practice
-- **Freelancing Guidance** to start your own business
-- **Lifetime Access** to all course materials and updates
-
-### 🎁 Special Bonuses:
-
-- **100+ Hours** of premium video content
-- **Private GitHub Repositories** with complete source code
-- **Exclusive Templates & Boilerplates** to accelerate development
-- **Monthly Q&A Sessions** with industry experts
-- **Certificate of Completion** to showcase your skills
-
----
-
-**Ready to level up your development skills and build the future?**
-
-[🚀 **Join Zero to Full Stack Hero NOW**](https://www.papareact.com/course)
-
-_Join thousands of developers who've transformed their careers with PAPAFAM!_
-
-## 🏆 Take It Further - Challenge Time!
-
-- Add more data sources beyond Perplexity such as Brightdata's SERP Scraper! (will pull data using Google!)
-- Implement competitor monitoring with alerts
-- Add team collaboration and report sharing
-- Build custom report templates and branding
-- Integrate with Google Analytics and Search Console
-- Add automated scheduled reports
-- Implement advanced filtering and search
-- Add export functionality (PDF, Excel)
 
 ## 📄 License & Commercial Use
 
-This project is provided for **educational and learning purposes only**.
+This project is a derivative work based on an open-source template originally created by Sonny Sangha (PapaReact). It has been significantly modified, rebranded, and extended by Huminary Labs for the RANKORA AI SaaS platform.
 
-### 🚨 Important Licensing Information:
+### Licensing & Attribution
 
-- **Personal Learning**: You are free to use this code for personal learning, experimentation, and portfolio demonstration
-- **Commercial Use**: Any commercial use, redistribution, or deployment of this code requires **explicit written permission** from Sonny Sangha
-- **No Resale**: You may not sell, redistribute, or claim ownership of this codebase
-- **Attribution Required**: If showcasing this project, proper attribution to Sonny Sangha and the original tutorial must be included
+- **Commercial Use**: This version is intended for commercial use as the official RANKORA AI SaaS by Huminary Labs.
+- **Attribution**: Original template and tutorial by Sonny Sangha (PapaReact). This project is not affiliated with or endorsed by the original author.
+- **No Resale of Template**: You may not resell or redistribute the original template as your own.
+- **Derivative Work**: All new features, branding, and business logic are the property of Huminary Labs.
 
-### 📧 For Commercial Licensing:
-
-If you wish to use this code commercially or have licensing questions, please contact us at **team@papareact.com** with details about your intended use case.
-
-**Violation of these terms may result in legal action.**
+For questions about licensing or partnership, contact [Huminary Labs](https://huminarylabs.com).
 
 ---
 
 ## Support
 
-For support, email team@papareact.com
+For support, email information@huminarylabs.com
 
-Built with ❤️ for the PAPAFAM
+Built with ❤️ by Huminary Labs
