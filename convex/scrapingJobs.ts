@@ -1,6 +1,6 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { seoReportSchema } from "@/lib/seo-schema";
+import { seoReportSchema } from "../lib/seo-schema";
 
 export const createScrapingJob = mutation({
   args: {

@@ -1,0 +1,17 @@
+# Prompt base para generación de Business Insights
+
+Analiza los siguientes datos del área de {{tipo}} y genera un resumen ejecutivo, métricas clave, recomendaciones accionables y visualizaciones sugeridas. El output debe ser estructurado y útil para la toma de decisiones de negocio.
+
+Datos:
+{{datos}}
+
+Objetivo del análisis:
+{{objetivo}}
+
+Formato de respuesta:
+- summary: resumen ejecutivo
+- metrics: lista de métricas clave
+- recommendations: lista de recomendaciones accionables
+- visualizations: sugerencias de gráficos/tablas
+- fuentes: fuentes de los datos
+- meta: cualquier información adicional relevante

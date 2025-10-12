@@ -22,6 +22,16 @@ export const metadata: Metadata = {
   description: "Generate comprehensive SEO reports in seconds using advanced AI analysis. Get insights on keywords, competitors, and ranking opportunities. Start free today!",
   keywords: "SEO analysis, AI reports, keyword research, competitor analysis, ranking insights, SEO tools",
   authors: [{ name: "RANKORA AI" }],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+    other: [
+      { rel: "android-chrome", url: "/android-chrome-192x192.png" },
+      { rel: "android-chrome", url: "/android-chrome-512x512.png" },
+      { rel: "mask-icon", url: "/favicon.svg" },
+    ],
+  },
   openGraph: {
     title: "RANKORA AI - AI-Powered SEO Analysis & Reports",
     description: "Generate comprehensive SEO reports in seconds using advanced AI analysis. Get insights on keywords, competitors, and ranking opportunities.",

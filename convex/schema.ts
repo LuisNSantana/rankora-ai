@@ -29,9 +29,45 @@ export default defineSchema({
     // Metadata
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
+    // Soft-delete flag
+    archived: v.optional(v.boolean()),
   })
     .index("by_status", ["status"])
     .index("by_created_at", ["createdAt"])
     .index("by_user", ["userId"])
     .index("by_user_and_created_at", ["userId", "createdAt"]),
+
+  insightReports: defineTable({
+    userId: v.string(),
+    originalPrompt: v.string(),
+    analysisPrompt: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("running"),
+      v.literal("analyzing"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    results: v.optional(v.array(v.any())),
+    insightReport: v.optional(v.any()), // Structured business insight
+    error: v.optional(v.string()),
+    // Execution logs (optional)
+    logs: v.optional(
+      v.array(
+        v.object({
+          t: v.number(),
+          msg: v.string(),
+          level: v.optional(v.string()), // info | warn | error
+        })
+      )
+    ),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+    // Soft-delete flag
+    archived: v.optional(v.boolean()),
+  })
+    .index("by_status", ["status"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_user", ["userId"])
+    .index("by_user_and_created_at", ["userId", "createdAt"])
 });

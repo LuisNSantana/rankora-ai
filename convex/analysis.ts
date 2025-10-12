@@ -4,8 +4,8 @@ import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
-import { buildAnalysisPrompt, systemPrompt } from "@/prompts/gpt";
-import { seoReportSchema } from "@/lib/seo-schema";
+import { buildAnalysisPrompt, systemPrompt } from "../prompts/gpt";
+import { seoReportSchema } from "../lib/seo-schema";
 import { internal, api } from "./_generated/api";
 
 /**

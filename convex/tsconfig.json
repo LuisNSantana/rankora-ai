@@ -12,11 +12,7 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
 
-    /* Path mapping for imports */
-    "baseUrl": "..",
-    "paths": {
-      "@/*": ["./*"]
-    },
+    /* Path mapping removed to avoid deprecated baseUrl; use relative imports in convex */
 
     /* These compiler options are required by Convex */
     "target": "ESNext",

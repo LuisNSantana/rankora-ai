@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogIn, Loader2, BarChart3 } from "lucide-react";
+import { LogIn, Loader2, BarChart3, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { UserButton, SignInButton } from "@clerk/nextjs";
@@ -41,6 +41,14 @@ function Header() {
             <Button variant="outline">
               <BarChart3 className="size-4" />
               <span className="sr-only md:not-sr-only md:ml-2">Dashboard</span>
+            </Button>
+          </Link>
+
+          {/* Insights Button - highlighted and intuitive */}
+          <Link href="/insights" title="Business Insights: Discover clients, metrics, and strategies">
+            <Button variant="default" className="font-bold bg-gradient-to-r from-yellow-400 to-pink-500 text-white shadow-lg hover:from-yellow-300 hover:to-pink-400">
+              <Lightbulb className="size-4 mr-1" />
+              <span className="md:ml-1">Insights</span>
             </Button>
           </Link>
 
