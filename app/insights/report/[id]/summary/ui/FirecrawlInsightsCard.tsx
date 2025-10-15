@@ -37,24 +37,30 @@ export default function FirecrawlInsightsCard({ insight }: FirecrawlInsightsCard
   const firecrawlSections = extractFirecrawlSections(insight);
 
   return (
-    <Card className="border-emerald-500/50 bg-emerald-500/5">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card className="border-2 border-emerald-500/30 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/20 shadow-lg">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-emerald-600" />
-              <CardTitle className="text-lg">🔍 Business Intelligence Premium</CardTitle>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
+                <Database className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                🔍 Business Intelligence
+              </CardTitle>
             </div>
-            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300">
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border-emerald-400 dark:border-emerald-700 font-semibold">
               91-98% Accuracy
             </Badge>
+            <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-0 shadow-md">
+              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+              Verified Data
+            </Badge>
           </div>
-          <Badge className="bg-emerald-600 text-white">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Verified Data
-          </Badge>
         </div>
-        <CardDescription>
+        <CardDescription className="text-sm sm:text-base text-emerald-800 dark:text-emerald-200 font-medium mt-2">
           Datos estructurados verificados extraídos directamente de sitios web empresariales
         </CardDescription>
       </CardHeader>
@@ -62,13 +68,17 @@ export default function FirecrawlInsightsCard({ insight }: FirecrawlInsightsCard
       <CardContent className="space-y-6">
         {/* Competitive Intelligence Section */}
         {firecrawlSections.competitive && (
-          <div className="space-y-3">
-            <h4 className="flex items-center gap-2 font-semibold text-amber-800">
-              <Target className="h-4 w-4" />
-              Inteligencia Competitiva
-            </h4>
-            <div className="bg-white p-4 rounded-lg border border-emerald-200">
-              <div dangerouslySetInnerHTML={{ 
+          <div className="space-y-3 group">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40">
+                <Target className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+              </div>
+              <h4 className="font-bold text-base text-amber-900 dark:text-amber-100">
+                Inteligencia Competitiva
+              </h4>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border-2 border-amber-200 dark:border-amber-800 shadow-sm group-hover:shadow-md transition-shadow">
+              <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ 
                 __html: formatMarkdownToHTML(firecrawlSections.competitive) 
               }} />
             </div>
@@ -77,13 +87,17 @@ export default function FirecrawlInsightsCard({ insight }: FirecrawlInsightsCard
 
         {/* Pricing Intelligence Section */}
         {firecrawlSections.pricing && (
-          <div className="space-y-3">
-            <h4 className="flex items-center gap-2 font-semibold text-blue-800">
-              <DollarSign className="h-4 w-4" />
-              Análisis de Precios Verificado
-            </h4>
-            <div className="bg-white p-4 rounded-lg border border-emerald-200">
-              <div dangerouslySetInnerHTML={{ 
+          <div className="space-y-3 group">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40">
+                <DollarSign className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+              </div>
+              <h4 className="font-bold text-base text-blue-900 dark:text-blue-100">
+                Análisis de Precios Verificado
+              </h4>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm group-hover:shadow-md transition-shadow">
+              <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ 
                 __html: formatMarkdownToHTML(firecrawlSections.pricing) 
               }} />
             </div>
@@ -92,13 +106,17 @@ export default function FirecrawlInsightsCard({ insight }: FirecrawlInsightsCard
 
         {/* Market Opportunities Section */}
         {firecrawlSections.opportunities && (
-          <div className="space-y-3">
-            <h4 className="flex items-center gap-2 font-semibold text-purple-800">
-              <TrendingUp className="h-4 w-4" />
-              Oportunidades de Mercado
-            </h4>
-            <div className="bg-white p-4 rounded-lg border border-emerald-200">
-              <div dangerouslySetInnerHTML={{ 
+          <div className="space-y-3 group">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40">
+                <TrendingUp className="h-4 w-4 text-purple-700 dark:text-purple-400" />
+              </div>
+              <h4 className="font-bold text-base text-purple-900 dark:text-purple-100">
+                Oportunidades de Mercado
+              </h4>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border-2 border-purple-200 dark:border-purple-800 shadow-sm group-hover:shadow-md transition-shadow">
+              <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ 
                 __html: formatMarkdownToHTML(firecrawlSections.opportunities) 
               }} />
             </div>
@@ -107,13 +125,17 @@ export default function FirecrawlInsightsCard({ insight }: FirecrawlInsightsCard
 
         {/* Customer Intelligence Section */}
         {firecrawlSections.customers && (
-          <div className="space-y-3">
-            <h4 className="flex items-center gap-2 font-semibold text-green-800">
-              <Users className="h-4 w-4" />
-              Insights de Clientes
-            </h4>
-            <div className="bg-white p-4 rounded-lg border border-emerald-200">
-              <div dangerouslySetInnerHTML={{ 
+          <div className="space-y-3 group">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40">
+                <Users className="h-4 w-4 text-green-700 dark:text-green-400" />
+              </div>
+              <h4 className="font-bold text-base text-green-900 dark:text-green-100">
+                Insights de Clientes
+              </h4>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border-2 border-green-200 dark:border-green-800 shadow-sm group-hover:shadow-md transition-shadow">
+              <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ 
                 __html: formatMarkdownToHTML(firecrawlSections.customers) 
               }} />
             </div>
@@ -121,44 +143,54 @@ export default function FirecrawlInsightsCard({ insight }: FirecrawlInsightsCard
         )}
 
         {/* Data Sources */}
-        <div className="border-t border-emerald-200 pt-4">
-          <h5 className="flex items-center gap-2 text-sm font-medium text-emerald-700 mb-2">
-            <Globe className="h-3 w-3" />
+        <div className="border-t-2 border-emerald-200 dark:border-emerald-800 pt-5">
+          <h5 className="flex items-center gap-2 text-sm font-bold text-emerald-800 dark:text-emerald-200 mb-3">
+            <Globe className="h-4 w-4" />
             Fuentes de Datos Verificadas
           </h5>
           <div className="flex flex-wrap gap-2">
             {insight.sources?.filter(source => 
               source.includes('http') || source.includes('firecrawl')
-            ).slice(0, 3).map((source, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs">
-                <ExternalLink className="h-2 w-2 mr-1" />
+            ).slice(0, 5).map((source, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
+                <ExternalLink className="h-3 w-3 mr-1" />
                 {formatSourceName(source)}
               </Badge>
             ))}
-            {insight.sources?.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{insight.sources.length - 3} más
+            {insight.sources?.length > 5 && (
+              <Badge variant="outline" className="text-xs bg-emerald-100 dark:bg-emerald-900/40 border-emerald-400 dark:border-emerald-600 text-emerald-800 dark:text-emerald-200 font-semibold">
+                +{insight.sources.length - 5} más
               </Badge>
             )}
           </div>
         </div>
 
         {/* Quality Indicators */}
-        <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="font-semibold text-emerald-700">91-98%</div>
-              <div className="text-xs text-emerald-600">Precisión</div>
+        <div className="bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 dark:from-emerald-950/50 dark:via-teal-950/50 dark:to-cyan-950/50 p-6 rounded-2xl border-2 border-emerald-300 dark:border-emerald-700 shadow-inner">
+          <div className="grid grid-cols-3 gap-6 text-center">
+            <div className="space-y-1">
+              <div className="text-3xl font-bold bg-gradient-to-br from-emerald-700 to-teal-700 dark:from-emerald-300 dark:to-teal-300 bg-clip-text text-transparent">
+                91-98%
+              </div>
+              <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                Precisión
+              </div>
             </div>
-            <div>
-              <div className="font-semibold text-emerald-700">
+            <div className="space-y-1">
+              <div className="text-3xl font-bold bg-gradient-to-br from-blue-700 to-cyan-700 dark:from-blue-300 dark:to-cyan-300 bg-clip-text text-transparent">
                 {insight.sources?.length || 0}
               </div>
-              <div className="text-xs text-emerald-600">Fuentes</div>
+              <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                Fuentes
+              </div>
             </div>
-            <div>
-              <div className="font-semibold text-emerald-700">Real-time</div>
-              <div className="text-xs text-emerald-600">Datos</div>
+            <div className="space-y-1">
+              <div className="text-2xl font-bold bg-gradient-to-br from-purple-700 to-pink-700 dark:from-purple-300 dark:to-pink-300 bg-clip-text text-transparent">
+                Real-time
+              </div>
+              <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                Datos
+              </div>
             </div>
           </div>
         </div>
@@ -203,13 +235,16 @@ function extractFirecrawlSections(insight: BusinessInsight) {
 function formatMarkdownToHTML(text: string): string {
   return text
     // Headers
-    .replace(/### (.*$)/gm, '<h3 class="font-semibold text-gray-800 mb-2">$1</h3>')
-    .replace(/## (.*$)/gm, '<h2 class="font-bold text-gray-900 mb-3">$1</h2>')
+    .replace(/### (.*$)/gm, '<h3 class="font-bold text-base text-gray-900 dark:text-gray-100 mb-2 mt-3">$1</h3>')
+    .replace(/## (.*$)/gm, '<h2 class="font-bold text-lg text-gray-900 dark:text-gray-50 mb-3 mt-4">$1</h2>')
     // Bold
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>')
     // Lists
-    .replace(/^\- (.*$)/gm, '<li class="text-gray-700 mb-1">• $1</li>')
+    .replace(/^\- (.*$)/gm, '<li class="text-gray-700 dark:text-gray-300 mb-1.5 leading-relaxed">• $1</li>')
+    // Wrap lists
+    .replace(/(<li class.*<\/li>\n?)+/g, '<ul class="space-y-1 my-3">$&</ul>')
     // Line breaks
+    .replace(/\n\n/g, '<br/><br/>')
     .replace(/\n/g, '<br/>');
 }
 

@@ -7,29 +7,26 @@ import { Lightbulb, Database, Clock, FileText, Award, Sparkles } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { DownloadInsightPDFButton } from "@/app/insights/DownloadInsightPDFButton";
 
-// Helper function to format markdown to HTML
-function formatMarkdownToHTML(text: string): string {
+// Header helper: create a short, safe excerpt without heavy markdown.
+function stripMarkdown(text: string): string {
   return text
-    // Headers
-    .replace(/### (.*$)/gm, '<h3 class="font-semibold text-lg text-foreground mb-2 mt-4">$1</h3>')
-    .replace(/## (.*$)/gm, '<h2 class="font-bold text-xl text-foreground mb-3 mt-6">$1</h2>')
-    .replace(/# (.*$)/gm, '<h1 class="font-bold text-2xl text-foreground mb-4 mt-8">$1</h1>')
-    // Bold
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
-    // Italic
-    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-    // Lists
-    .replace(/^\- (.*$)/gm, '<li class="text-muted-foreground mb-1 ml-4">• $1</li>')
-    .replace(/^\* (.*$)/gm, '<li class="text-muted-foreground mb-1 ml-4">• $1</li>')
-    .replace(/^\d+\. (.*$)/gm, '<li class="text-muted-foreground mb-1 ml-4 list-decimal">$1</li>')
-    // Code blocks
-    .replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm font-mono">$1</code>')
-    // Line breaks and paragraphs
-    .replace(/\n\n/g, '</p><p class="mb-3">')
-    .replace(/\n/g, '<br/>')
-    // Wrap in paragraph
-    .replace(/^/, '<p class="mb-3">')
-    .replace(/$/, '</p>');
+    .replace(/^\s{0,3}#{1,6}.*$/gmi, "") // remove headings
+    .replace(/^\s*[-*+]\s+/gmi, "") // remove unordered bullets
+    .replace(/^\s*\d+\.\s+/gmi, "") // remove ordered bullets
+    .replace(/\*\*(.*?)\*\*/g, "$1") // bold
+    .replace(/\*(.*?)\*/g, "$1") // italics
+    .replace(/`([^`]+)`/g, "$1") // inline code
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1") // links -> text
+    .replace(/\r\n?/g, "\n"); // normalize newlines
+}
+
+function getExcerpt(text: string, max = 240): string {
+  const sanitized = stripMarkdown(text).trim();
+  if (sanitized.length <= max) return sanitized;
+  // Try to cut at sentence boundary
+  const dot = sanitized.indexOf(".", Math.floor(max * 0.8));
+  if (dot > 0 && dot < max + 60) return sanitized.slice(0, dot + 1);
+  return sanitized.slice(0, max).replace(/[\s,;]+[^\s]*$/, "") + "…";
 }
 
 interface SummaryHeaderProps {
@@ -96,19 +93,23 @@ export default function SummaryHeader({ insight }: SummaryHeaderProps) {
                 </div>
               </div>
             </div>
-            {insight.summary && (
+            {/* Show a short abstract only if there's no premium executive summary to avoid duplication */}
+            {!insight.premium?.executive_summary && insight.summary && (
               <div className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                <div 
-                  dangerouslySetInnerHTML={{ 
-                    __html: formatMarkdownToHTML(insight.summary) 
-                  }}
-                  className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-ul:text-muted-foreground"
-                />
+                <p className="mb-0">{getExcerpt(insight.summary, 260)}</p>
               </div>
             )}
             {insight.meta?.research && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                 <FileText className="h-4 w-4" /> Enriquecido con datos de investigación
+              </div>
+            )}
+            {insight.meta?.source_verification && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted/60 border border-border/40">{String((insight.meta as any).source_verification.summary)}</span>
+                {(insight.meta as any).source_verification.invalid?.length > 0 && (
+                  <span className="text-destructive">{(insight.meta as any).source_verification.invalid.length} invalid</span>
+                )}
               </div>
             )}
           </div>

@@ -70,10 +70,10 @@ export default function InsightStatusPage({ params }: { params: Promise<{ id: st
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 px-4 py-10">
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Insight Generation</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Insight Generation</h1>
           <p className="text-muted-foreground text-sm">Tracking progress for your business insight request</p>
         </div>
-        <div className="border rounded-lg bg-card p-6 space-y-6">
+        <div className="border rounded-xl bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 p-6 space-y-6 shadow-sm">
           <div className="flex flex-col items-center">
             {(report.status === "pending" || report.status === "running" || report.status === "analyzing") && (
               <Loader2 className={`w-6 h-6 animate-spin mb-3 ${spinnerColor(report.status as InsightStatus)}`} />
@@ -87,7 +87,10 @@ export default function InsightStatusPage({ params }: { params: Promise<{ id: st
               <span>{report.status === "failed" ? "Error" : `${pct}%`}</span>
             </div>
             <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-              <div className={`h-2 transition-all duration-500 ${report.status === "failed" ? "bg-red-500 w-full" : report.status === "completed" ? "bg-green-500 w-full" : report.status === "analyzing" ? "bg-purple-500 w-3/4" : report.status === "running" ? "bg-blue-500 w-1/4" : "bg-yellow-500 w-0"}`}></div>
+              <div
+                className={`h-2 transition-all duration-700 ease-out ${report.status === "failed" ? "bg-gradient-to-r from-red-500 to-red-600 w-full" : report.status === "completed" ? "bg-gradient-to-r from-emerald-500 to-green-500 w-full" : report.status === "analyzing" ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 w-3/4" : report.status === "running" ? "bg-gradient-to-r from-sky-500 to-blue-600 w-1/4" : "bg-gradient-to-r from-amber-400 to-yellow-500 w-0"}`}
+                style={{ boxShadow: "0 0 12px rgba(99,102,241,0.35) inset" }}
+              />
             </div>
           </div>
 
@@ -100,23 +103,23 @@ export default function InsightStatusPage({ params }: { params: Promise<{ id: st
 
           {/* Execution timeline / logs */}
           <div className="pt-4 border-t">
-            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
               <ListTree className="w-4 h-4" /> Flujo de ejecución
             </div>
-            <div className="space-y-2 text-xs">
+            <ol className="relative pl-6 space-y-3 text-xs">
               {(report.logs || []).map((l: any, idx: number) => (
-                <div key={idx} className="flex items-start gap-3">
-                  <div className={`mt-1 h-2 w-2 rounded-full ${l.level === 'error' ? 'bg-red-500' : l.level === 'warn' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
-                  <div>
-                    <div className="text-muted-foreground">{formatDateTime(l.t)}</div>
+                <li key={idx} className="relative">
+                  <span className={`absolute left-0 top-1.5 h-2 w-2 rounded-full ring-4 ring-offset-2 ring-transparent ${l.level === 'error' ? 'bg-red-500 ring-red-500/15' : l.level === 'warn' ? 'bg-yellow-500 ring-yellow-500/15' : 'bg-blue-500 ring-blue-500/15'}`} />
+                  <div className="ml-2 p-3 rounded-lg border bg-card/60">
+                    <div className="text-muted-foreground mb-1">{formatDateTime(l.t)}</div>
                     <div className="text-foreground">{l.msg}</div>
                   </div>
-                </div>
+                </li>
               ))}
               {(!report.logs || report.logs.length === 0) && (
                 <div className="text-muted-foreground">No hay eventos aún…</div>
               )}
-            </div>
+            </ol>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">

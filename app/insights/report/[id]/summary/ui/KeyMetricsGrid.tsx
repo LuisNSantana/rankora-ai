@@ -25,23 +25,54 @@ function isGenericName(name?: string): boolean {
 
 function formatValue(value: unknown, unit?: string): string {
   const str = String(value);
+  
   // Percent cases
   if (str.includes("%") || unit === "%") {
-    // keep as-is, normalize comma
+    const cleanNum = parseFloat(str.replace(/[^0-9.-]/g, ""));
+    if (!isNaN(cleanNum)) {
+      return `${cleanNum.toFixed(cleanNum % 1 === 0 ? 0 : 1)}%`;
+    }
     return str.replace(/\s+/g, "").replace(/,(\d{1,2})$/, ".$1");
   }
-  // Currency heuristic
-  const currency = unit && ["$", "€", "USD", "EUR", "MXN", "COP", "ARS", "CLP"].includes(unit) ? unit : undefined;
+  
+  // Extract number and check for currency
   const num = Number(str.replace(/[^0-9.-]/g, ""));
+  const hasCurrency = /[$€£¥]|USD|EUR|GBP|MXN|COP|ARS|CLP/.test(str + (unit || ""));
+  const currencySymbol = unit && ["$", "€", "USD", "EUR"].includes(unit) ? unit : 
+                         str.match(/[$€£¥]/)?.[0] || "";
+  
   if (!Number.isNaN(num) && Number.isFinite(num)) {
+    const absNum = Math.abs(num);
+    
+    // Format large numbers with K, M, B, T
+    if (absNum >= 1_000_000_000_000) {
+      const val = (num / 1_000_000_000_000).toFixed(2);
+      return hasCurrency ? `${currencySymbol}${val}T` : `${val}T`;
+    }
+    if (absNum >= 1_000_000_000) {
+      const val = (num / 1_000_000_000).toFixed(2);
+      return hasCurrency ? `${currencySymbol}${val}B` : `${val}B`;
+    }
+    if (absNum >= 1_000_000) {
+      const val = (num / 1_000_000).toFixed(2);
+      return hasCurrency ? `${currencySymbol}${val}M` : `${val}M`;
+    }
+    if (absNum >= 1_000) {
+      const val = (num / 1_000).toFixed(2);
+      return hasCurrency ? `${currencySymbol}${val}K` : `${val}K`;
+    }
+    
+    // Small numbers - format with minimal decimals
     try {
-      if (currency === "$" || currency === "USD") return new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(num);
-      if (currency === "€" || currency === "EUR") return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(num);
-      return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(num);
+      if (hasCurrency && currencySymbol) {
+        return `${currencySymbol}${num.toLocaleString('es-ES', { maximumFractionDigits: 2 })}`;
+      }
+      return num.toLocaleString('es-ES', { maximumFractionDigits: num % 1 === 0 ? 0 : 2 });
     } catch {
       return str;
     }
   }
+  
   return str;
 }
 
@@ -62,44 +93,61 @@ export default function KeyMetricsGrid({ insight }: KeyMetricsGridProps) {
           <p className="text-sm text-muted-foreground">Indicadores de desempeño extraídos de las fuentes</p>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
         {metrics.slice(0, 32).map((m, i) => {
           const trendInfo = m.trend ? trendMap[m.trend] : null;
           const valueDisplay = formatValue(m.value as any, m.unit);
+          const showUnit = m.unit && !String(valueDisplay).includes("%") && !/[€$£¥]|USD|EUR|GBP/.test(String(valueDisplay));
+          
           return (
             <Card
               key={i}
-              className="relative overflow-hidden border bg-gradient-to-br from-card to-card/95 group hover:shadow-md transition-all duration-300"
+              className="relative overflow-hidden border-2 border-transparent bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-slate-900 dark:via-slate-900/95 dark:to-blue-950/30 group hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-xl transition-all duration-300"
             >
-              <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-6 translate-x-6 group-hover:scale-150 transition-transform duration-500" />
-              <CardContent className="p-5 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <h3 className="font-semibold text-sm text-muted-foreground tracking-wide uppercase line-clamp-2">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 rounded-full opacity-30 -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-500" />
+              <CardContent className="relative p-5 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2 min-w-0 flex-1">
+                    <h3 className="font-medium text-xs text-muted-foreground/80 tracking-wider uppercase line-clamp-2 leading-tight">
                       {m.name}
                     </h3>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold tracking-tight text-foreground">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-br from-slate-900 to-blue-800 dark:from-slate-100 dark:to-blue-300 bg-clip-text text-transparent">
                         {valueDisplay}
                       </span>
-                      {m.unit && !String(valueDisplay).includes("%") && !/[€$]/.test(String(valueDisplay)) && (
-                        <span className="text-xs font-medium text-muted-foreground">{m.unit}</span>
+                      {showUnit && (
+                        <span className="text-xs font-semibold text-muted-foreground/70 uppercase">{m.unit}</span>
                       )}
                     </div>
                   </div>
                   {trendInfo && (
                     <Badge
                       variant="secondary"
-                      className={`flex items-center gap-1 ${trendInfo.color} bg-transparent border border-border/40`}
+                      className={`flex items-center gap-1 ${trendInfo.color} bg-white/80 dark:bg-slate-800/80 border-2 shadow-sm`}
                     >
                       {trendInfo.icon}
-                      <span className="text-[10px] font-medium tracking-wide">{trendInfo.label}</span>
                     </Badge>
                   )}
                 </div>
-                {m.trend && (
-                  <div className="text-[11px] text-muted-foreground/80 font-mono">
-                    Tendencia: {trendInfo?.label || m.trend}
+                {m.benchmark && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground/70">Benchmark:</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {formatValue(m.benchmark, m.unit)}
+                    </span>
+                  </div>
+                )}
+                {m.percentile && (
+                  <div className="mt-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 mb-1">
+                      <span>Percentil {m.percentile}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-700"
+                        style={{ width: `${m.percentile}%` }}
+                      />
+                    </div>
                   </div>
                 )}
               </CardContent>

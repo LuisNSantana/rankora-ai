@@ -11,6 +11,8 @@ import IndustryIntelligenceCard from "./ui/IndustryIntelligenceCard";
 import VisualizationsGrid from "./ui/VisualizationsGrid";
 import FirecrawlInsightsCard from "./ui/FirecrawlInsightsCard";
 import LeadIntelligenceCard from "./ui/LeadIntelligenceCard";
+import PlaybooksCard from "./ui/PlaybooksCard";
+import ExecutiveSummaryCard from "./ui/ExecutiveSummaryCard";
 import { DownloadInsightPDFButton } from "@/app/insights/DownloadInsightPDFButton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import AIChat from "@/components/AIChat";
@@ -90,20 +92,38 @@ export default function InsightSummary({ params }: InsightSummaryProps) {
             </CardContent>
           </Card>
         )}
+        
         <DownloadInsightPDFButton insight={insight} />
         
-        {/* Firecrawl Business Intelligence Premium Section */}
+        {/* Resumen Ejecutivo - Sección Hero */}
+        <ExecutiveSummaryCard insight={insight} />
+        
+        {/* Business Intelligence */}
         <FirecrawlInsightsCard insight={insight} />
 
-        {/* Lead Intelligence - Phase 1 */}
+        {/* Lead Intelligence */}
         {insight.meta?.leadIntelligence && (
           <LeadIntelligenceCard report={insight.meta.leadIntelligence as any} />
         )}
         
+        {/* Métricas Clave */}
         <KeyMetricsGrid insight={insight} />
+        
+        {/* Industry Intelligence */}
         <IndustryIntelligenceCard insight={insight} />
+        
+        {/* Recomendaciones */}
         <RecommendationsCard insight={insight} />
+        
+        {/* Matriz de Priorización */}
         <RecommendationMatrix insight={insight} />
+        
+        {/* Playbooks de Ejecución */}
+        {(insight as any)?.meta?.playbooks && (
+          <PlaybooksCard insight={insight as any} />
+        )}
+        
+        {/* Visualizaciones */}
         <VisualizationsGrid insight={insight} />
         
         {/* AI Chat Assistant */}

@@ -139,38 +139,46 @@ export default function InsightsPage() {
     setLoading(true);
     setInsight(null);
 
-    const payload = {
-      type,
-      prompt: prompt.trim(),
-      sector: sector || undefined,
-      country: country || undefined,
-      size: size || undefined,
-      // Advanced Grok-4-fast parameters
-      useCase: basicUseCase,
-      researchDepth: basicResearchDepth,
-      enableLiveSearch: basicEnableLiveSearch,
-      // Note: Always uses combined flow (Perplexity + Grok-4-fast + Live Search)
-    };
+    try {
+      // 1) Crear job primero para tener una página de estado inmediata
+      const createRes = await fetch("/insights/api/create-job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: prompt.trim().slice(0, 100) })
+      });
+      const createData = await createRes.json();
+      const jobId = createData?._id;
+      if (!createRes.ok || !jobId) throw new Error(createData?.error || "No se pudo crear el job");
 
-    const res = await fetch("/insights/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    
-    // Limpia el input tras crear
-    setPrompt("");
-    setLoading(false);
+      // 2) Redirigir de inmediato a la página de estado
+      router.push(`/insights/report/${jobId}`);
 
-    // Si backend retorna id, navega INMEDIATAMENTE al summary para ver progreso en vivo
-    const newId = data?._id || data?.id || null;
-    if (newId) {
-      // Navigate directly to summary to see live progress (same as documents)
-      router.push(`/insights/report/${newId}/summary`);
-      return;
+      // 3) Disparar generación en background apuntando al mismo job
+      const payload = {
+        type,
+        prompt: prompt.trim(),
+        sector: sector || undefined,
+        country: country || undefined,
+        size: size || undefined,
+        useCase: basicUseCase,
+        researchDepth: basicResearchDepth,
+        enableLiveSearch: basicEnableLiveSearch,
+        jobId,
+      } as any;
+
+      fetch("/insights/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+
+      // Limpia input local pero deja que el usuario vea el progreso
+      setPrompt("");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setInsight(data);
   }
 
   // Handle file selection
