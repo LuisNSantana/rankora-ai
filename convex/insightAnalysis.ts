@@ -4,7 +4,8 @@ import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { BusinessInsightSchema } from "../lib/insights-schema";
+import { BusinessInsightSchemaV2 } from "../lib/insights-schema-v2";
+import { mapPremiumInsightToLegacy } from "../lib/insights-adapter";
 import { internal, api } from "./_generated/api";
 import { systemPromptForInsights, buildInsightAnalysisPrompt } from "../prompts/insight";
 
@@ -38,21 +39,46 @@ export const runInsightAnalysis = internalAction({
       // Save prompt for debugging
       await ctx.runMutation(api.insightReports.patchInsightReport, { id: args.jobId, patch: { analysisPrompt } });
 
-      // Generate structured BusinessInsight using AI
-      const { object: insight } = await generateObject({
-        model: openai("gpt-4o-mini"),
-        system: systemPromptForInsights(),
-        prompt: analysisPrompt,
-        schema: BusinessInsightSchema as any,
+      const preferredModels = ["gpt-4.1", "gpt-4o-mini"]; // fallbacks ordered by quality
+      let premiumInsight: any | null = null;
+      let lastError: unknown = null;
+
+      for (const modelId of preferredModels) {
+        try {
+          console.log(`Attempting premium insight generation with model ${modelId}`);
+          const { object } = await generateObject({
+            model: openai(modelId),
+            system: systemPromptForInsights(),
+            prompt: analysisPrompt,
+            schema: BusinessInsightSchemaV2 as any,
+          });
+          premiumInsight = object;
+          break;
+        } catch (modelError) {
+          lastError = modelError;
+          console.warn(`Model ${modelId} failed to produce premium insight`, modelError);
+        }
+      }
+
+      if (!premiumInsight) {
+        throw lastError || new Error("Failed to generate premium insight");
+      }
+
+      const legacyInsight = mapPremiumInsightToLegacy(premiumInsight);
+
+      console.log("Insight generated for job:", args.jobId, {
+        title: legacyInsight.title,
+        version: legacyInsight.version,
+        analysisType: legacyInsight.meta?.analysis_type,
       });
 
-      console.log("Insight generated for job:", args.jobId, { title: insight.title });
-
-      // Persist insight
       await ctx.runMutation(api.insightReports.patchInsightReport, {
         id: args.jobId,
         patch: {
-          insightReport: insight,
+          insightReport: {
+            ...legacyInsight,
+            premium: premiumInsight,
+          },
           status: "completed",
           completedAt: Date.now(),
           error: undefined,

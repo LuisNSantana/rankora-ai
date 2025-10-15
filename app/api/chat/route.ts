@@ -28,21 +28,23 @@ export async function POST(req: Request) {
     id: string;
   } = await req.json();
 
-  // Get the SEO report from the database
+  // Get the SEO report OR Insight report from the database
   let seoReportData = null;
-  let systemPrompt = `You are an AI assistant helping users understand their SEO report. 
+  let insightReportData = null;
+  let systemPrompt = `You are an AI assistant helping users understand their reports. 
   
-  Provide helpful insights and answer questions about the SEO data and recommendations.`;
+  Provide helpful insights and answer questions about the data and recommendations.`;
 
   if (id) {
     try {
-      const job = await convex.query(api.scrapingJobs.getJobBySnapshotId, {
+      // Try to get SEO report first
+      const seoJob = await convex.query(api.scrapingJobs.getJobBySnapshotId, {
         snapshotId: id,
         userId: userId,
       });
 
-      if (job?.seoReport) {
-        seoReportData = job.seoReport;
+      if (seoJob?.seoReport) {
+        seoReportData = seoJob.seoReport;
         systemPrompt = `You are an AI assistant helping users understand their SEO report.
 
 CURRENT SEO REPORT DATA:
@@ -63,11 +65,53 @@ Use the web_search tool to answer questions about the SEO report if it will help
 
 Provide specific, data-driven insights based on the actual report data. When referencing metrics, use the exact numbers from the report. Be conversational but informative.`;
       } else {
-        systemPrompt += `\n\nNote: SEO report with ID "${id}" was found but analysis may still be in progress or failed. Please check the report status.`;
+        // Try to get Insight report
+        try {
+          const insightJob = await convex.query(api.insightReports.getInsightById, {
+            id: id as any,
+          });
+
+          if (insightJob?.insightReport) {
+            insightReportData = insightJob.insightReport;
+            systemPrompt = `You are an AI assistant helping users understand their Business Insight report.
+
+CURRENT BUSINESS INSIGHT DATA:
+${JSON.stringify(insightReportData, null, 2)}
+
+You have access to comprehensive business analysis for "${insightReportData.title || "this business analysis"}" (${insightReportData.type || "general analysis"}).
+
+Key areas you can help with:
+- Business metrics interpretation and trends
+- Strategic recommendations and execution playbooks
+- Regional and regulatory compliance insights
+- Competitive positioning and market analysis
+- Risk assessment and mitigation strategies
+- Financial projections and scenario planning
+- Visualization insights and data storytelling
+- Actionable next steps and implementation guidance
+
+The insight includes:
+- ${insightReportData.metrics?.length || 0} key metrics
+- ${insightReportData.recommendations?.length || 0} strategic recommendations
+- ${insightReportData.visualizations?.length || 0} data visualizations
+- Regional/regulatory context: ${insightReportData.meta?.regions_regulations?.join(", ") || "Not specified"}
+- Richness score: ${insightReportData.meta?.richness_score || "Not calculated"}/100
+
+Use the web_search tool to provide additional context about industry benchmarks, regulatory requirements, or strategic frameworks when helpful.
+
+Provide specific, actionable insights based on the actual report data. Reference exact metrics and recommendations from the analysis. Be conversational, executive-focused, and help users understand both the "what" and the "how" of their business insights.`;
+          }
+        } catch (insightError) {
+          console.log("No insight report found for ID:", id);
+        }
+      }
+
+      if (!seoReportData && !insightReportData) {
+        systemPrompt += `\n\nNote: No report found for ID "${id}". The report may not exist, may still be processing, or you may not have access to it.`;
       }
     } catch (error) {
-      console.error("Error fetching SEO report:", error);
-      systemPrompt += `\n\nNote: Unable to fetch SEO report data for ID "${id}". The report may not exist or you may not have access to it.`;
+      console.error("Error fetching report:", error);
+      systemPrompt += `\n\nNote: Unable to fetch report data for ID "${id}". The report may not exist or you may not have access to it.`;
     }
   }
 

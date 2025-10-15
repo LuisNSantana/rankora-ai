@@ -49,7 +49,14 @@ export default defineSchema({
       v.literal("failed")
     ),
     results: v.optional(v.array(v.any())),
-    insightReport: v.optional(v.any()), // Structured business insight
+    
+    // SCALABLE STORAGE STRATEGY:
+    // For small reports (< 500 KB): Store directly in insightReport
+    // For large reports (>= 500 KB): Store in Convex File Storage
+    insightReport: v.optional(v.any()), // Lightweight summary or full report if small
+    insightFileId: v.optional(v.id("_storage")), // Storage ID for large reports
+    reportSize: v.optional(v.number()), // Size in bytes for monitoring
+    
     error: v.optional(v.string()),
     // Execution logs (optional)
     logs: v.optional(

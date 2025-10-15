@@ -1,5 +1,7 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 // Create a new insight report
 export const createInsightReport = mutation({
@@ -50,10 +52,23 @@ export const searchInsights = query({
       .withIndex("by_user", q => q.eq("userId", userId))
       .order("desc")
       .take(100);
-    return all.filter(r =>
-      (r.originalPrompt?.toLowerCase().includes(query.toLowerCase()) || "") ||
-      (r.insightReport?.summary?.toLowerCase().includes(query.toLowerCase()) || "")
-    ).slice(0, limit);
+    const needle = query.toLowerCase();
+    return all
+      .filter(r => {
+        const textPool: Array<string | undefined> = [
+          r.originalPrompt,
+          r.insightReport?.summary,
+          Array.isArray(r.insightReport?.summary_points)
+            ? r.insightReport?.summary_points.join(" ")
+            : undefined,
+          r.insightReport?.title,
+          r.insightReport?.meta?.analysis_type,
+          r.insightReport?.premium?.meta?.title,
+          r.insightReport?.premium?.executive_summary?.overview,
+        ];
+        return textPool.some(text => text?.toLowerCase().includes(needle));
+      })
+      .slice(0, limit);
   },
 });
 
@@ -67,6 +82,15 @@ export const getInsightById = query({
 
 // Patch an insight report (update status/progress/results)
 export const patchInsightReport = mutation({
+  args: { id: v.id("insightReports"), patch: v.any() },
+  handler: async (ctx, { id, patch }) => {
+    await ctx.db.patch(id, patch);
+    return true;
+  },
+});
+
+// Internal version for use within other mutations/actions
+export const patchInsightReportInternal = internalMutation({
   args: { id: v.id("insightReports"), patch: v.any() },
   handler: async (ctx, { id, patch }) => {
     await ctx.db.patch(id, patch);
@@ -142,5 +166,136 @@ export const deleteInsightReport = mutation({
   handler: async (ctx, { id }) => {
     await ctx.db.patch(id, { archived: true });
     return true;
+  },
+});
+
+// ============================================================================
+// SCALABLE STORAGE FUNCTIONS - Handle large insights using Convex File Storage
+// ============================================================================
+
+/**
+ * Save insight report intelligently:
+ * - Small reports (< 500 KB): Store directly in DB
+ * - Large reports (>= 500 KB): Store in File Storage with lightweight summary in DB
+ */
+export const saveInsightReport = action({
+  args: {
+    id: v.id("insightReports"),
+    insightData: v.any(),
+  },
+  handler: async (ctx, { id, insightData }) => {
+    const jsonString = JSON.stringify(insightData);
+    const sizeInBytes = new TextEncoder().encode(jsonString).length;
+    const SIZE_THRESHOLD = 500 * 1024; // 500 KB threshold
+
+    console.log(`[saveInsightReport] Report size: ${(sizeInBytes / 1024).toFixed(2)} KB`);
+
+    if (sizeInBytes < SIZE_THRESHOLD) {
+      // Small report: Store directly in DB
+      await ctx.runMutation(internal.insightReports.patchInsightReportInternal, {
+        id,
+        patch: {
+          insightReport: insightData,
+          reportSize: sizeInBytes,
+          status: "completed",
+          completedAt: Date.now(),
+          error: undefined,
+        },
+      });
+      console.log(`[saveInsightReport] Stored directly in DB (${(sizeInBytes / 1024).toFixed(2)} KB)`);
+      return { storage: "database", size: sizeInBytes };
+    } else {
+      // Large report: Store in File Storage
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const storageId = await ctx.storage.store(blob);
+
+      // Create lightweight summary for DB
+      const summary = {
+        type: insightData.type,
+        title: insightData.title,
+        summary: insightData.summary?.substring(0, 500) + "..." || "",
+        metrics: insightData.metrics?.slice(0, 5) || [], // First 5 metrics only
+        metricsCount: insightData.metrics?.length || 0,
+        recommendationsCount: insightData.recommendations?.length || 0,
+        visualizationsCount: insightData.visualizations?.length || 0,
+        sourcesCount: insightData.sources?.length || 0,
+        generated_at: insightData.generated_at,
+        meta: insightData.meta,
+      };
+
+      await ctx.runMutation(internal.insightReports.patchInsightReportInternal, {
+        id,
+        patch: {
+          insightReport: summary, // Lightweight summary
+          insightFileId: storageId, // Reference to full report
+          reportSize: sizeInBytes,
+          status: "completed",
+          completedAt: Date.now(),
+          error: undefined,
+        },
+      });
+
+      console.log(`[saveInsightReport] Stored in File Storage (${(sizeInBytes / 1024).toFixed(2)} KB)`);
+      return { storage: "file", size: sizeInBytes, storageId };
+    }
+  },
+});
+
+/**
+ * Get full insight report (handles both DB and File Storage)
+ */
+export const getFullInsightReport = query({
+  args: { id: v.id("insightReports") },
+  handler: async (ctx, { id }) => {
+    const report = await ctx.db.get(id);
+    if (!report) return null;
+
+    // If there's a file storage ID, return metadata indicating full report needs to be fetched
+    if (report.insightFileId) {
+      return {
+        ...report,
+        isLargeReport: true as const,
+        storageId: report.insightFileId,
+        // insightReport contains summary only
+      };
+    }
+
+    // Small report stored directly in DB
+    return {
+      ...report,
+      isLargeReport: false as const,
+      storageId: undefined as Id<"_storage"> | undefined,
+    };
+  },
+});
+
+/**
+ * Get the full insight content from File Storage
+ * This is called separately when needed (e.g., for PDF generation or detailed view)
+ */
+export const getInsightFileContent = action({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    const blob = await ctx.storage.get(storageId);
+    if (!blob) {
+      throw new Error("Insight file not found in storage");
+    }
+    const text = await blob.text();
+    return JSON.parse(text);
+  },
+});
+
+/**
+ * Get insight report URL for direct download/access
+ */
+export const getInsightFileUrl = mutation({
+  args: { id: v.id("insightReports") },
+  handler: async (ctx, { id }) => {
+    const report = await ctx.db.get(id);
+    if (!report?.insightFileId) {
+      return null;
+    }
+    // Return storage URL - this will be used in frontend
+    return await ctx.storage.getUrl(report.insightFileId);
   },
 });

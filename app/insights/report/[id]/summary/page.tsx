@@ -1,18 +1,20 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { BusinessInsight } from "@/lib/insights-schema";
+import { AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import SummaryHeader from "./ui/SummaryHeader";
 import KeyMetricsGrid from "./ui/KeyMetricsGrid";
 import RecommendationsCard from "./ui/RecommendationsCard";
+import RecommendationMatrix from "./ui/RecommendationMatrix";
+import IndustryIntelligenceCard from "./ui/IndustryIntelligenceCard";
 import VisualizationsGrid from "./ui/VisualizationsGrid";
+import FirecrawlInsightsCard from "./ui/FirecrawlInsightsCard";
+import LeadIntelligenceCard from "./ui/LeadIntelligenceCard";
 import { DownloadInsightPDFButton } from "@/app/insights/DownloadInsightPDFButton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
+import AIChat from "@/components/AIChat";
+import { useFullInsight } from "./useFullInsight";
 import type { Id } from "@/convex/_generated/dataModel";
 
 interface InsightSummaryProps {
@@ -21,69 +23,101 @@ interface InsightSummaryProps {
 
 export default function InsightSummary({ params }: InsightSummaryProps) {
   // params comes as a Promise in Next.js 15; unwrap with React.use()
-  // Cast to any to satisfy the Usable<T> typing
   const { id } = React.use(params as any) as { id: string };
   const { user } = useUser();
 
-  // Convex expects Id<"insightReports">, so cast string to Id type
-  const report = useQuery(api.insightReports.getInsightById, {
-    id: id as Id<"insightReports">,
-  });
+  // Use custom hook that handles both small and large reports
+  const { insight, isLoading, isLargeReport, error } = useFullInsight(id as Id<"insightReports">);
 
-  const insight = report?.insightReport as BusinessInsight | undefined;
-
-  if (report === undefined) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading insight report...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (report === null || !insight) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Insight Not Found</h2>
           <p className="text-muted-foreground">
-            The requested business insight could not be found.
+            {isLargeReport ? "Loading large insight report from storage..." : "Loading insight report..."}
           </p>
         </div>
       </div>
     );
   }
-  // Derive a display title: insight.title > insight.meta.title > report.originalPrompt
-  const displayTitle = insight.title || insight.meta?.title || (report?.originalPrompt as string) || "Business Insight";
 
-  // Create a shallow copy with ensured meta.title and status/createdAt for UI
-  const insightForUI: BusinessInsight & { status?: string; createdAt?: number } = {
-    ...insight,
-    meta: { ...(insight.meta || {}), title: displayTitle },
-    status: report.status,
-    createdAt: report.createdAt,
-  };
+  if (error || !insight) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">
+            {error ? "Error Loading Insight" : "Insight Not Found"}
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            {error || "The requested business insight could not be found."}
+          </p>
+          {isLargeReport && error && (
+            <Card className="mt-4 border-orange-500/50">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Large Report Notice
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                This is a large insight report stored in file storage. 
+                If the error persists, please contact support.
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <SummaryHeader insight={insightForUI} />
+      <SummaryHeader insight={insight} />
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 space-y-8 lg:space-y-12">
-        <DownloadInsightPDFButton insight={insightForUI} />
-        <KeyMetricsGrid insight={insightForUI} />
-        <RecommendationsCard insight={insightForUI} />
-        <VisualizationsGrid insight={insightForUI} />
+        {isLargeReport && (
+          <Card className="border-blue-500/50 bg-blue-500/5">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Large Report Loaded Successfully
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              This comprehensive insight was stored in high-capacity file storage due to its size.
+              All features are available, including PDF export and AI chat.
+            </CardContent>
+          </Card>
+        )}
+        <DownloadInsightPDFButton insight={insight} />
+        
+        {/* Firecrawl Business Intelligence Premium Section */}
+        <FirecrawlInsightsCard insight={insight} />
+
+        {/* Lead Intelligence - Phase 1 */}
+        {insight.meta?.leadIntelligence && (
+          <LeadIntelligenceCard report={insight.meta.leadIntelligence as any} />
+        )}
+        
+        <KeyMetricsGrid insight={insight} />
+        <IndustryIntelligenceCard insight={insight} />
+        <RecommendationsCard insight={insight} />
+        <RecommendationMatrix insight={insight} />
+        <VisualizationsGrid insight={insight} />
+        
+        {/* AI Chat Assistant */}
+        <AIChat seoReportId={id} reportType="insight" />
+        
         {/* Fuentes: lista de archivos/URLs analizados */}
-        {Array.isArray(insightForUI.sources) && insightForUI.sources.length > 0 && (
+        {Array.isArray(insight.sources) && insight.sources.length > 0 && (
           <Card className="border bg-gradient-to-br from-card to-card/95">
             <CardHeader>
               <CardTitle className="text-2xl">Fuentes</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="list-disc pl-6 space-y-2 text-sm">
-                {insightForUI.sources.map((src, i) => {
+                {insight.sources.map((src: string, i: number) => {
                   const isUrl = /^https?:\/\//i.test(src);
                   return (
                     <li key={i} className="break-words">
@@ -102,12 +136,12 @@ export default function InsightSummary({ params }: InsightSummaryProps) {
           </Card>
         )}
         {/* Research & Sources: show Perplexity research if available */}
-        {insightForUI.meta?.research && (
+        {insight.meta?.research && (
           <div className="bg-card rounded shadow p-6 border border-border/50">
             <h3 className="text-lg font-semibold mb-2">Research & Notes</h3>
-            <div className="text-sm text-muted-foreground whitespace-pre-line">{String(insightForUI.meta.research)}</div>
-            {insightForUI.meta?.sourcesDetailed && (
-              <div className="mt-3 text-xs text-muted-foreground">Sources: {String(insightForUI.meta.sourcesDetailed)}</div>
+            <div className="text-sm text-muted-foreground whitespace-pre-line">{String(insight.meta.research)}</div>
+            {insight.meta?.sourcesDetailed && (
+              <div className="mt-3 text-xs text-muted-foreground">Sources: {String(insight.meta.sourcesDetailed)}</div>
             )}
           </div>
         )}

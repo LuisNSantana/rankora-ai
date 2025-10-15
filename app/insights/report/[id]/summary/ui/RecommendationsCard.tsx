@@ -2,7 +2,7 @@ import React from "react";
 import { BusinessInsight } from "@/lib/insights-schema";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, TrendingUp, CheckCircle, Target } from "lucide-react";
+import { AlertTriangle, TrendingUp, CheckCircle, Target, Flame } from "lucide-react";
 
 interface RecommendationsCardProps {
   insight: BusinessInsight;
@@ -12,6 +12,13 @@ export default function RecommendationsCard({ insight }: RecommendationsCardProp
   if (!insight.recommendations || insight.recommendations.length === 0) return null;
 
   const priorityMap: Record<string, any> = {
+    critical: {
+      icon: Flame,
+      bg: "from-red-100 via-red-50 to-amber-50 dark:from-red-950/40 dark:via-rose-950/20 dark:to-amber-900/20",
+      border: "border-red-300 dark:border-red-800",
+      badge: "bg-gradient-to-r from-red-600 to-rose-500 text-white",
+      iconColor: "text-red-500 dark:text-red-300",
+    },
     high: {
       icon: AlertTriangle,
       bg: "from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30",
@@ -51,7 +58,7 @@ export default function RecommendationsCard({ insight }: RecommendationsCardProp
       <CardContent>
         <div className="grid gap-6">
           {insight.recommendations.map((r, i) => {
-            const conf = priorityMap[r.priority || 'medium'];
+            const conf = priorityMap[r.priority || "medium"] || priorityMap.medium;
             const Icon = conf.icon;
             return (
               <div
@@ -67,16 +74,19 @@ export default function RecommendationsCard({ insight }: RecommendationsCardProp
                       <h4 className="font-bold text-lg leading-tight line-clamp-2 break-words">{r.title}</h4>
                       <Badge className={`${conf.badge} border-0 text-xs px-2.5 py-1 capitalize`}>Prioridad {r.priority || 'medium'}</Badge>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed mb-3 text-sm break-words whitespace-pre-line">
+                    <p className="text-muted-foreground leading-relaxed mb-4 text-sm break-words whitespace-pre-line">
                       {r.description}
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground/80">
-                      <span className="inline-flex items-center gap-1">
-                        <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> Impacto potencial
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Target className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" /> Enfoque de ejecución
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground/90">
+                      {r.timeline && (
+                        <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-0">{r.timeline}</Badge>
+                      )}
+                      {r.estimated_impact && (
+                        <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-0 capitalize">Impacto: {r.estimated_impact}</Badge>
+                      )}
+                      {r.estimated_effort && (
+                        <Badge variant="secondary" className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-0 capitalize">Esfuerzo: {r.estimated_effort}</Badge>
+                      )}
                     </div>
                   </div>
                 </div>

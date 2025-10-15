@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export default function AIChat({ seoReportId }: { seoReportId: string }) {
+export default function AIChat({ seoReportId, reportType = "seo" }: { seoReportId: string; reportType?: "seo" | "insight" }) {
   const [input, setInput] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const { messages, sendMessage, status } = useChat({
@@ -29,12 +29,24 @@ export default function AIChat({ seoReportId }: { seoReportId: string }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      sendMessage({ text: input, metadata: { seoReportId } });
+      sendMessage({ text: input, metadata: { seoReportId, reportType } });
       setInput("");
     }
   };
 
   const isTyping = status === "submitted";
+
+  const chatContext = reportType === "insight" 
+    ? {
+        title: "Business Insight Assistant",
+        placeholder: "Ask me about your business analysis...",
+        welcomeMessage: "👋 Hi! Ask me anything about your business insight report."
+      }
+    : {
+        title: "SEO Assistant", 
+        placeholder: "Ask me about your SEO report...",
+        welcomeMessage: "👋 Hi! Ask me anything about your SEO report."
+      };
 
   return (
     <>
@@ -48,7 +60,7 @@ export default function AIChat({ seoReportId }: { seoReportId: string }) {
                 <img src="/rankora_logo.png" alt="Rankora Logo" className="w-8 h-8 object-contain rounded-full" />
               </div>
               <div>
-                <h3 className="font-semibold text-base">Rankora AI Assistant</h3>
+                <h3 className="font-semibold text-base">Rankora {chatContext.title}</h3>
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(
@@ -68,7 +80,7 @@ export default function AIChat({ seoReportId }: { seoReportId: string }) {
           <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.length === 0 && (
               <div className="text-center text-gray-500 text-sm py-8">
-                👋 Hi! Ask me anything about your SEO report.
+                {chatContext.welcomeMessage}
               </div>
             )}
 
@@ -226,7 +238,7 @@ export default function AIChat({ seoReportId }: { seoReportId: string }) {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about your SEO report..."
+                placeholder={chatContext.placeholder}
                 className="flex-1 h-11 bg-slate-900 text-white placeholder:text-slate-300 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                 disabled={isTyping}
               />

@@ -112,6 +112,8 @@ export default function InsightsTable({ insights }: { insights: any[] }) {
               <TableHead className="font-semibold text-foreground">Insight</TableHead>
               <TableHead className="font-semibold text-foreground">Status</TableHead>
               <TableHead className="font-semibold text-foreground">Created</TableHead>
+              <TableHead className="font-semibold text-foreground">Model</TableHead>
+              <TableHead className="font-semibold text-foreground">Size</TableHead>
               <TableHead className="font-semibold text-foreground w-32">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -151,6 +153,28 @@ export default function InsightsTable({ insights }: { insights: any[] }) {
                 </TableCell>
                 <TableCell className="py-4 text-muted-foreground">
                   {formatDate(insight.createdAt || insight.generated_at)}
+                </TableCell>
+                <TableCell className="py-4">
+                  {insight.insightReport?.meta?.generation?.model || insight.meta?.generation?.model ? (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {insight.insightReport?.meta?.generation?.model || insight.meta?.generation?.model}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+                <TableCell className="py-4">
+                  {typeof insight.reportSize === "number" ? (
+                    <span className="text-xs text-muted-foreground">
+                      {(insight.reportSize / 1024).toFixed(1)} KB
+                    </span>
+                  ) : insight.insightReport?.meta?.metric_count ? (
+                    <span className="text-xs text-muted-foreground">
+                      {insight.insightReport.meta.metric_count} metrics
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">n/a</span>
+                  )}
                 </TableCell>
                 <TableCell className="py-4 flex gap-2 items-center">
                   <DownloadInsightButton insight={insight.insightReport || insight} />

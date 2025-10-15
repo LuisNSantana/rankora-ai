@@ -3,9 +3,34 @@ import { BusinessInsight } from "@/lib/insights-schema";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDateTime } from "@/lib/status-utils";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, Database, Clock, FileText } from "lucide-react";
+import { Lightbulb, Database, Clock, FileText, Award, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DownloadInsightPDFButton } from "@/app/insights/DownloadInsightPDFButton";
+
+// Helper function to format markdown to HTML
+function formatMarkdownToHTML(text: string): string {
+  return text
+    // Headers
+    .replace(/### (.*$)/gm, '<h3 class="font-semibold text-lg text-foreground mb-2 mt-4">$1</h3>')
+    .replace(/## (.*$)/gm, '<h2 class="font-bold text-xl text-foreground mb-3 mt-6">$1</h2>')
+    .replace(/# (.*$)/gm, '<h1 class="font-bold text-2xl text-foreground mb-4 mt-8">$1</h1>')
+    // Bold
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
+    // Italic
+    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+    // Lists
+    .replace(/^\- (.*$)/gm, '<li class="text-muted-foreground mb-1 ml-4">• $1</li>')
+    .replace(/^\* (.*$)/gm, '<li class="text-muted-foreground mb-1 ml-4">• $1</li>')
+    .replace(/^\d+\. (.*$)/gm, '<li class="text-muted-foreground mb-1 ml-4 list-decimal">$1</li>')
+    // Code blocks
+    .replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm font-mono">$1</code>')
+    // Line breaks and paragraphs
+    .replace(/\n\n/g, '</p><p class="mb-3">')
+    .replace(/\n/g, '<br/>')
+    // Wrap in paragraph
+    .replace(/^/, '<p class="mb-3">')
+    .replace(/$/, '</p>');
+}
 
 interface SummaryHeaderProps {
   insight: BusinessInsight & { status?: string; createdAt?: number };
@@ -17,6 +42,18 @@ export default function SummaryHeader({ insight }: SummaryHeaderProps) {
     : insight.generated_at
     ? formatDateTime(new Date(insight.generated_at).getTime())
     : undefined;
+
+  // Richness badge styling
+  const richness_tier = insight.meta?.richness_tier || "basic";
+  const richness_score = insight.meta?.richness_score || 0;
+  const tierConfig: Record<string, { label: string; color: string; icon: typeof Sparkles }> = {
+    elite: { label: "Elite", color: "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0", icon: Sparkles },
+    premium: { label: "Premium", color: "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-0", icon: Award },
+    standard: { label: "Standard", color: "bg-gradient-to-r from-green-600 to-emerald-600 text-white border-0", icon: Award },
+    basic: { label: "Basic", color: "bg-muted text-muted-foreground border border-border", icon: FileText },
+  };
+  const tierInfo = tierConfig[richness_tier] || tierConfig.basic;
+  const TierIcon = tierInfo.icon;
 
   return (
     <div className="border-b bg-gradient-to-r from-card via-card/95 to-card backdrop-blur-sm">
@@ -43,6 +80,11 @@ export default function SummaryHeader({ insight }: SummaryHeaderProps) {
                       <Database className="h-3.5 w-3.5 mr-1" /> {insight.sources.length} fuentes
                     </Badge>
                   )}
+                  <Badge className={`flex items-center gap-1.5 px-3 py-1 ${tierInfo.color}`}>
+                    <TierIcon className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{tierInfo.label}</span>
+                    <span className="text-[10px] opacity-90">({richness_score})</span>
+                  </Badge>
                   {created && (
                     <Badge variant="secondary" className="bg-muted/60 text-muted-foreground border-border/40">
                       <Clock className="h-3.5 w-3.5 mr-1" /> {created}
@@ -55,9 +97,14 @@ export default function SummaryHeader({ insight }: SummaryHeaderProps) {
               </div>
             </div>
             {insight.summary && (
-              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-line">
-                {insight.summary}
-              </p>
+              <div className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                <div 
+                  dangerouslySetInnerHTML={{ 
+                    __html: formatMarkdownToHTML(insight.summary) 
+                  }}
+                  className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-ul:text-muted-foreground"
+                />
+              </div>
             )}
             {insight.meta?.research && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
