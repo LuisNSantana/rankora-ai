@@ -26,13 +26,12 @@ function Header() {
     >
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4">
         <div className="flex flex-1 items-center gap-3">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center">
             <img
-              src="/rankora_logo.png"
-              alt="RANKORA AI"
-              className="h-12 md:h-14 w-auto"
+              src="/crispbacon1.png"
+              alt="CrispBaconAI"
+              className="h-10 md:h-12 w-auto"
             />
-            <span className="text-sm font-semibold tracking-tight">RANKORA AI</span>
           </Link>
         </div>
 

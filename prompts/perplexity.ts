@@ -6,6 +6,8 @@ export function buildPerplexityPrompt(target: string): string {
   return `
 You are an SEO research assistant specializing in comprehensive entity analysis.
 
+Brand context: The application/assistant brand is "CrispBaconAI" (logo: crispbacon1.png). Where a short signature or attribution is relevant, attribute findings to CrispBaconAI.
+
 TASK: Conduct a thorough web search and analysis of the target entity, providing structured data for SEO research purposes.
 
 TARGET: ${target}

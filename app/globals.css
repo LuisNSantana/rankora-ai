@@ -9,6 +9,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* CrispBacon Brand Colors - Consistentes en ambos modos */
+  --color-brand-bacon: #FF6B35;
+  --color-brand-ai: #007BFF;
+  --color-brand-meat: #D63031;
+  --color-neutral-data: #1E90FF;
+  
+  /* Design System Tokens */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent-primary: var(--accent-primary);
+  --color-border-subtle: var(--border-subtle);
+  
+  /* Sidebar System */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -17,11 +33,15 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  
+  /* Charts */
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  
+  /* Legacy tokens for compatibility */
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -38,6 +58,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  
+  /* Border Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -46,72 +68,98 @@
 
 :root {
   --radius: 0.625rem;
-  /* Pastel, premium light tokens */
-  --background: #F7F9FC; /* subtle off-white */
-  --foreground: #0F172A; /* slate-900 */
-  --card: #FFFFFF;
-  --card-foreground: #0F172A;
+  
+  /* ☀️ CrispBacon Light Mode - Limpio y Profesional */
+  --bg-primary: #FFFFFF; /* Fondo principal - lienzo limpio */
+  --bg-secondary: #F5F5F5; /* Superficie secundaria - tarjetas elevadas */
+  --text-primary: #1C1C1C; /* Texto principal - negro suave */
+  --text-secondary: #666666; /* Texto secundario - metadatos */
+  --accent-primary: #FF6B35; /* Acento primario - brand-bacon */
+  --border-subtle: #E0E0E0; /* Bordes y divisores sutiles */
+  
+  /* Legacy mapping for compatibility */
+  --background: #FFFFFF;
+  --foreground: #1C1C1C;
+  --card: #F5F5F5;
+  --card-foreground: #1C1C1C;
   --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
-  --primary: #2563EB; /* Rankora blue */
+  --popover-foreground: #1C1C1C;
+  --primary: #FF6B35; /* brand-bacon */
   --primary-foreground: #FFFFFF;
-  --secondary: #E6EDF7; /* soft blue-gray */
-  --secondary-foreground: #0F172A;
-  --muted: #EAEFF6;
-  --muted-foreground: #55607A; /* better contrast */
-  --accent: #0F172A;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #1C1C1C;
+  --muted: #F5F5F5;
+  --muted-foreground: #666666;
+  --accent: #007BFF; /* brand-ai */
   --accent-foreground: #FFFFFF;
-  --destructive: #DC2626;
-  --border: #E6EAF1;
-  --input: #E6EAF1;
-  --ring: #2563EB;
-  --chart-1: #2563EB;
-  --chart-2: #0F172A;
-  --chart-3: #6B7280;
-  --chart-4: #10B981;
-  --chart-5: #F59E42;
+  --destructive: #D63031; /* brand-meat */
+  --border: #E0E0E0;
+  --input: #E0E0E0;
+  --ring: #FF6B35;
+  
+  /* Charts - Inspirados en la paleta CrispBacon */
+  --chart-1: #FF6B35; /* brand-bacon */
+  --chart-2: #007BFF; /* brand-ai */
+  --chart-3: #1E90FF; /* neutral-data */
+  --chart-4: #D63031; /* brand-meat */
+  --chart-5: #666666; /* text-secondary */
+  
+  /* Sidebar */
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #0F172A;
-  --sidebar-primary: #2563EB;
+  --sidebar-foreground: #1C1C1C;
+  --sidebar-primary: #FF6B35;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E6EDF7;
-  --sidebar-accent-foreground: #0F172A;
-  --sidebar-border: #E6EAF1;
-  --sidebar-ring: #2563EB;
+  --sidebar-accent: #F5F5F5;
+  --sidebar-accent-foreground: #1C1C1C;
+  --sidebar-border: #E0E0E0;
+  --sidebar-ring: #FF6B35;
 }
 
 .dark {
-  --background: #0E131B; /* deeper, cleaner */
-  --foreground: #E6EAF1;
-  --card: #161C26;
-  --card-foreground: #E6EAF1;
-  --popover: #161C26;
-  --popover-foreground: #E6EAF1;
-  --primary: #3B82F6; /* slightly lighter for dark contrast */
+  /* 🌙 CrispBacon Dark Mode - Tecnológico y Premium */
+  --bg-primary: #121212; /* Fondo principal - negro OLED profundo */
+  --bg-secondary: #1E1E1E; /* Superficie secundaria - tarjetas con profundidad */
+  --text-primary: #EDEDED; /* Texto principal - blanco suave (sin blooming) */
+  --text-secondary: #A0A0A0; /* Texto secundario - metadatos */
+  --accent-primary: #FF6B35; /* Acento primario - brand-bacon (mantiene identidad) */
+  --border-subtle: #333333; /* Bordes oscuros pero visibles */
+  
+  /* Legacy mapping for compatibility */
+  --background: #121212;
+  --foreground: #EDEDED;
+  --card: #1E1E1E;
+  --card-foreground: #EDEDED;
+  --popover: #1E1E1E;
+  --popover-foreground: #EDEDED;
+  --primary: #FF6B35; /* brand-bacon */
   --primary-foreground: #FFFFFF;
-  --secondary: #1C2330;
-  --secondary-foreground: #E6EAF1;
-  --muted: #1C2330;
-  --muted-foreground: #8A94A7;
-  --accent: #2563EB;
+  --secondary: #1E1E1E;
+  --secondary-foreground: #EDEDED;
+  --muted: #1E1E1E;
+  --muted-foreground: #A0A0A0;
+  --accent: #007BFF; /* brand-ai */
   --accent-foreground: #FFFFFF;
-  --destructive: #F87171;
-  --border: #232A36;
-  --input: #232A36;
-  --ring: #3B82F6;
-  --chart-1: #3B82F6;
-  --chart-2: #93C5FD;
-  --chart-3: #60A5FA;
-  --chart-4: #10B981;
-  --chart-5: #F59E42;
-  --sidebar: #161C26;
-  --sidebar-foreground: #E6EAF1;
-  --sidebar-primary: #3B82F6;
+  --destructive: #D63031; /* brand-meat */
+  --border: #333333;
+  --input: #333333;
+  --ring: #FF6B35;
+  
+  /* Charts - Misma paleta CrispBacon en dark mode */
+  --chart-1: #FF6B35; /* brand-bacon */
+  --chart-2: #007BFF; /* brand-ai */
+  --chart-3: #1E90FF; /* neutral-data */
+  --chart-4: #D63031; /* brand-meat */
+  --chart-5: #A0A0A0; /* text-secondary */
+  
+  /* Sidebar */
+  --sidebar: #1E1E1E;
+  --sidebar-foreground: #EDEDED;
+  --sidebar-primary: #FF6B35;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1C2330;
-  --sidebar-accent-foreground: #E6EAF1;
-  --sidebar-border: #232A36;
-  --sidebar-ring: #3B82F6;
+  --sidebar-accent: #121212;
+  --sidebar-accent-foreground: #EDEDED;
+  --sidebar-border: #333333;
+  --sidebar-ring: #FF6B35;
 }
 
 @layer base {

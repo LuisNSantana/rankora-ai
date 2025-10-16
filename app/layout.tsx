@@ -18,10 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RANKORA AI - AI-Powered SEO Analysis & Reports",
-  description: "Generate comprehensive SEO reports in seconds using advanced AI analysis. Get insights on keywords, competitors, and ranking opportunities. Start free today!",
-  keywords: "SEO analysis, AI reports, keyword research, competitor analysis, ranking insights, SEO tools",
-  authors: [{ name: "RANKORA AI" }],
+  title: "CrispBaconAI — AI-Powered Insights & SEO Reports",
+  description: "CrispBaconAI genera informes ejecutivos e insights SEO en segundos con IA. Métricas, competidores y oportunidades listos para accionar.",
+  keywords: "CrispBaconAI, SEO analysis, AI reports, keyword research, competitor analysis, ranking insights, SEO tools",
+  authors: [{ name: "CrispBaconAI" }],
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-32x32.png",
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "RANKORA AI - AI-Powered SEO Analysis & Reports",
-    description: "Generate comprehensive SEO reports in seconds using advanced AI analysis. Get insights on keywords, competitors, and ranking opportunities.",
+  title: "CrispBaconAI — AI-Powered Insights & SEO Reports",
+  description: "CrispBaconAI genera informes ejecutivos e insights SEO en segundos con IA.",
     type: "website",
   },
 };

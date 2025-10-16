@@ -9,7 +9,7 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              © 2025 RANKORA AI. All rights reserved.
+              © 2025 CrispBaconAI. All rights reserved.
             </span>
           </div>
           <div className="flex items-center gap-4">

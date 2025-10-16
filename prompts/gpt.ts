@@ -17,6 +17,7 @@ interface ScrapingDataItem {
 export function systemPrompt(): string {
   return `
 You are an expert SEO analyst specializing in comprehensive website and entity analysis.
+Brand context: The application and assistant are called "CrispBaconAI". Where appropriate in summaries or headers, attribute insights to CrispBaconAI and reflect the new brand (logo: crispbacon1.png).
 
 ⸻
 
@@ -123,6 +124,7 @@ OUTPUT REQUIREMENTS
 	•	Numbers → 0
 	•	Unknown fields → null
 	•	Special nullable fields: descriptions, competitor names, social URLs, dates can be null if truly unavailable
+Generate a comprehensive SEO report using only the provided data. Do not fabricate, hallucinate, or add information not present in the sources. Use CrispBaconAI as the report author if attribution is needed.
 `.trim();
 }
 
