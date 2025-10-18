@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import { xai, GROK_MODELS, createUsageRecord } from "@/lib/xai-client";
 import { openai } from "@ai-sdk/openai";
 import { BusinessInsightSchema } from "@/lib/insights-schema";
-import { systemPromptForInsights } from "@/prompts/insight";
+import { systemPromptForInsights, buildPromptByType } from "@/prompts/insight";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
   detectIndustry,
@@ -26,6 +26,7 @@ import {
 import { queryPerplexity } from "@/lib/perplexity";
 import { FirecrawlService } from "@/lib/firecrawl";
 import { BusinessIntelligenceService } from "@/lib/business-intelligence";
+import { LeadIntelligenceService } from "@/lib/lead-intelligence-service";
 import { LLMLeadGenerator } from "@/lib/llm-lead-generation";
 import type { LeadIntelligenceReportType } from "@/lib/lead-intelligence-schema";
 import { 
@@ -153,7 +154,7 @@ async function generateInsightWithCombinedFlow(params: InsightRequest, jobId: st
     }
   }
 
-  // STEP 2.5: Lead Intelligence - LLM-FIRST APPROACH ⚡
+  // STEP 2.5: Lead Intelligence - REAL WEB SCRAPING WITH FIRECRAWL 🔥
   let leadGenReport: LeadIntelligenceReportType | null = null;
   let leadGenUsed = false;
   
@@ -161,31 +162,31 @@ async function generateInsightWithCombinedFlow(params: InsightRequest, jobId: st
   const leadIntent = /lead|cliente|prospect|ventas|adquisici[óo]n|pipeline|outbound|inbound/i.test(prompt || "");
   if (((useCase || "").toLowerCase() === "lead-gen") || leadIntent) {
     try {
-      console.log(`[Insight Job ${jobId}] 🎯 STEP 2.5: Starting LLM Lead Intelligence Generation...`);
-      try { await new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!).mutation(api.insightReports.appendLog, { id: jobId as any, msg: "STEP 2.5: LLM Lead Intelligence", level: "info" }); } catch {}
-      console.log(`[Insight Job ${jobId}]   → Strategy: LLM-First (Grok-4-fast)`);
+      console.log(`[Insight Job ${jobId}] 🎯 STEP 2.5: Starting REAL Lead Intelligence Extraction...`);
+      try { await new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!).mutation(api.insightReports.appendLog, { id: jobId as any, msg: "STEP 2.5: Real Lead Intelligence (Firecrawl)", level: "info" }); } catch {}
+  console.log(`[Insight Job ${jobId}]   → Strategy: WebSearch-only (Firecrawl Search)`);
       console.log(`[Insight Job ${jobId}]   → Sector: ${detectedSector}`);
       console.log(`[Insight Job ${jobId}]   → Country: ${country || "Global"}`);
-      console.log(`[Insight Job ${jobId}]   → Target: 10 high-quality leads`);
+      console.log(`[Insight Job ${jobId}]   → Target: 15 real companies`);
 
       const leadGenStart = Date.now();
       
-      // Use LLM Lead Generator instead of web scraping (10x faster, more reliable)
-      leadGenReport = await LLMLeadGenerator.generateLeads(
+      // Use REAL Lead Intelligence Service with Firecrawl web scraping
+      leadGenReport = await LeadIntelligenceService.generateLeads(
         detectedSector,
         useCase,
         country || "Global",
-        10
+        15 // Extract 15 real companies from the web (optimized for cost)
       );
       
       const leadGenTime = Date.now() - leadGenStart;
       
       if (leadGenReport && leadGenReport.qualified_leads.length > 0) {
         leadGenUsed = true;
-        console.log(`[Insight Job ${jobId}] ✅ STEP 2.5 Complete: ${leadGenReport.qualified_leads.length} leads in ${leadGenTime}ms (${(leadGenTime/1000).toFixed(1)}s)`);
-        try { await new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!).mutation(api.insightReports.appendLog, { id: jobId as any, msg: `✓ STEP 2.5 complete: ${leadGenReport.qualified_leads.length} leads`, level: "info" }); } catch {}
+        console.log(`[Insight Job ${jobId}] ✅ STEP 2.5 Complete: ${leadGenReport.qualified_leads.length} REAL leads in ${leadGenTime}ms (${(leadGenTime/1000).toFixed(1)}s)`);
+        try { await new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!).mutation(api.insightReports.appendLog, { id: jobId as any, msg: `✓ STEP 2.5 complete: ${leadGenReport.qualified_leads.length} real leads from web`, level: "info" }); } catch {}
       } else {
-        console.log(`[Insight Job ${jobId}] ⚠️ STEP 2.5: No leads generated`);
+        console.log(`[Insight Job ${jobId}] ⚠️ STEP 2.5: No leads extracted from web`);
         try { await new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!).mutation(api.insightReports.appendLog, { id: jobId as any, msg: "STEP 2.5 completed with 0 leads", level: "warn" }); } catch {}
       }
     } catch (e: any) {
@@ -345,18 +346,19 @@ ${JSON.stringify(firecrawlData, null, 2).substring(0, 2500)}
 
     enhancedPrompt += `
 
-## 🎯 High-Quality Lead Intelligence (LLM-Generated)
+## 🎯 High-Quality Lead Intelligence (Web Scraped)
 - Total Qualified Leads: ${leadGenReport.qualified_leads.length}
-- Data Source: Grok-4-fast AI Generation with Market Intelligence
-- Generation Method: LLM-first approach (fast, reliable, accurate)
+- Data Source: Real company websites via Firecrawl
+- Extraction Method: Web scraping with structured data extraction
 
 Top ${topLeads.length} Leads Preview:
 ${topLeads.join("\n")}
 
 Instructions:
-- Mention these leads are AI-generated but based on real market data
-- Focus on the qualification scoring and outreach strategies
-- Full lead details with contact info are in the attached report
+- These are REAL companies extracted from the web with actual data
+- Focus on the qualification scoring and personalized outreach strategies
+- Full lead details with contact info, tech stack, and pain points included
+- Prioritize high-fit score leads for immediate outreach
 `;
   }
 
@@ -402,6 +404,26 @@ specific data citations, and actionable intelligence backed by verified Firecraw
 - Reference real customer success patterns for growth strategies
 - Incorporate actual technology capabilities for implementation planning
 `;
+
+  // If request specifies a known packaged type, override with a specialized builder
+  try {
+    const t = (params as any)?.type as string | undefined;
+    if (t === "seo_content_opportunity" || t === "competitor_pricing_intel") {
+      console.log(`[Insight Job ${jobId}] Using specialized prompt builder for type=${t}`);
+      const typedPrompt = buildPromptByType(t as any, {
+        entity: prompt,
+        country,
+        sector: detectedSector,
+        size,
+        researchDepth,
+        enableLiveSearch,
+        scrapingData: firecrawlData || []
+      });
+      enhancedPrompt = typedPrompt;
+    }
+  } catch (e) {
+    console.warn(`[Insight Job ${jobId}] Failed to apply specialized prompt builder:`, (e as any)?.message || e);
+  }
 
   // Log prompt size for debugging
   const promptSizeKB = (enhancedPrompt.length / 1024).toFixed(2);

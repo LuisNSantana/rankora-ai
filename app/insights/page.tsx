@@ -317,6 +317,10 @@ export default function InsightsPage() {
                     <SelectValue placeholder="Tipo" />
                   </SelectTrigger>
                   <SelectContent>
+                    {/* Productized types (A & B) */}
+                    <SelectItem value="seo_content_opportunity">🧭 SEO & Content Opportunity</SelectItem>
+                    <SelectItem value="competitor_pricing_intel">⚔️ Competitor & Pricing</SelectItem>
+                    <div className="h-px bg-muted my-1" />
                     <SelectItem value="clients">👥 Clientes</SelectItem>
                     <SelectItem value="sales">💼 Ventas</SelectItem>
                     <SelectItem value="marketing">📢 Marketing</SelectItem>

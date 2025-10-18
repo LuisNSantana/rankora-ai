@@ -13,6 +13,9 @@ import FirecrawlInsightsCard from "./ui/FirecrawlInsightsCard";
 import LeadIntelligenceCard from "./ui/LeadIntelligenceCard";
 import PlaybooksCard from "./ui/PlaybooksCard";
 import ExecutiveSummaryCard from "./ui/ExecutiveSummaryCard";
+import InsightSpotlight from "./ui/InsightSpotlight";
+import RoadmapTimeline from "./ui/RoadmapTimeline";
+import SmartFiltersBar from "./ui/SmartFiltersBar";
 import { DownloadInsightPDFButton } from "@/app/insights/DownloadInsightPDFButton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import AIChat from "@/components/AIChat";
@@ -77,6 +80,10 @@ export default function InsightSummary({ params }: InsightSummaryProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <SummaryHeader insight={insight} />
+      
+      {/* Sticky Filters Bar - Phase 2 */}
+      <SmartFiltersBar />
+      
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 space-y-8 lg:space-y-12">
         {isLargeReport && (
           <Card className="border-blue-500/50 bg-blue-500/5">
@@ -94,6 +101,9 @@ export default function InsightSummary({ params }: InsightSummaryProps) {
         )}
         
         <DownloadInsightPDFButton insight={insight} />
+        
+        {/* Hero Section - Phase 1: Top Recommendation Spotlight */}
+        <InsightSpotlight insight={insight} />
         
         {/* Resumen Ejecutivo - Sección Hero */}
         <ExecutiveSummaryCard insight={insight} />
@@ -122,6 +132,9 @@ export default function InsightSummary({ params }: InsightSummaryProps) {
         {(insight as any)?.meta?.playbooks && (
           <PlaybooksCard insight={insight as any} />
         )}
+        
+        {/* Interactive Roadmap - Phase 2: 30/60/90 Timeline */}
+        <RoadmapTimeline insight={insight} />
         
         {/* Visualizaciones */}
         <VisualizationsGrid insight={insight} />

@@ -31,18 +31,29 @@ export function DownloadInsightPDFButton({ insight }: { insight: BusinessInsight
         body: JSON.stringify({ insight }),
       });
 
+      const contentType = response.headers.get("content-type") ?? "";
+
       if (!response.ok) {
         let message = "No se pudo generar el PDF.";
-        const contentType = response.headers.get("content-type") ?? "";
         if (contentType.includes("application/json")) {
           const data = await response.json().catch(() => null);
-          if (data && typeof data.message === "string") {
-            message = data.message;
-          }
+          if (data && typeof data.message === "string") message = data.message;
         }
         throw new Error(message);
       }
 
+      // If server fell back to HTML (no headless browser), open the HTML preview in a new tab
+      if (contentType.includes("text/html")) {
+        const html = await response.text();
+        const blob = new Blob([html], { type: "text/html" });
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, "_blank", "noopener,noreferrer");
+        // Also surface a gentle notice to the user
+        setError("No se pudo generar el PDF. Mostrando versión HTML del informe en una nueva pestaña.");
+        return;
+      }
+
+      // Otherwise proceed with PDF download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");

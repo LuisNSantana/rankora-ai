@@ -7,6 +7,16 @@ import type { ChartConfiguration } from "chart.js";
 let chartRenderer: any = null;
 async function ensureChartRenderer(): Promise<typeof chartRenderer | null> {
   if (chartRenderer) return chartRenderer;
+  // Allow disabling charts explicitly or on macOS by default to avoid native canvas issues in dev.
+  const disableChartsEnv = (process.env.DISABLE_PDF_CHARTS || "").toLowerCase();
+  const disableCharts = disableChartsEnv === "1" || disableChartsEnv === "true";
+  // On macOS, default to disabled unless FORCE_PDF_CHARTS is set
+  const isMac = typeof process !== "undefined" && process.platform === "darwin";
+  const forceCharts = (process.env.FORCE_PDF_CHARTS || "").toLowerCase() === "1" || (process.env.FORCE_PDF_CHARTS || "").toLowerCase() === "true";
+  if (disableCharts || (isMac && !forceCharts)) {
+    console.warn("Chart rendering disabled (env/platform configuration)");
+    return null;
+  }
   try {
     const mod = await import("chartjs-node-canvas");
     const { ChartJSNodeCanvas } = mod as any;
@@ -21,8 +31,8 @@ async function ensureChartRenderer(): Promise<typeof chartRenderer | null> {
       },
     });
     return chartRenderer;
-  } catch (e) {
-    console.warn("Chart rendering deshabilitado (dependencia no disponible)", e);
+  } catch (e: any) {
+    console.warn("Chart rendering disabled (dependency not available):", e?.message || e);
     return null;
   }
 }

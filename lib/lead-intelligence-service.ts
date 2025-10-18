@@ -40,10 +40,10 @@ export class LeadIntelligenceService {
     console.log(`[LeadService] ✅ Step 1 complete: Found ${urls.length} URLs in ${Date.now() - startTime}ms`);
 
     // 2) Extract data for each URL and map to QualifiedLeadType aligned with schema
-    console.log(`[LeadService] 📊 Step 2: Extracting lead data from ${urls.length} URLs...`);
-    const extractStart = Date.now();
-    const leads: QualifiedLeadType[] = await this.extractBatch(app, urls, sector, useCase);
-    console.log(`[LeadService] ✅ Step 2 complete: Extracted ${leads.length} leads in ${Date.now() - extractStart}ms`);
+  console.log(`[LeadService] 📊 Step 2: Building leads from web search results (no scraping) for ${urls.length} URLs...`);
+  const extractStart = Date.now();
+  const leads: QualifiedLeadType[] = await this.buildLeadsFromSearch(urls, sector, useCase, country);
+  console.log(`[LeadService] ✅ Step 2 complete: Built ${leads.length} leads in ${Date.now() - extractStart}ms`);
 
     // 3) Score and sort
     console.log(`[LeadService] 🎯 Step 3: Scoring and sorting leads...`);
@@ -106,83 +106,79 @@ export class LeadIntelligenceService {
     country: string,
     targetCount: number
   ): Promise<string[]> {
-    // OPTIMIZACIÓN: Usar fallback directory primero si disponible para España (INSTANT)
-    if (country.toLowerCase().includes('españa') || country.toLowerCase().includes('spain') || country.toLowerCase().includes('es')) {
+    // 0) Prefer curated directory for España when available (instant)
+    if (
+      country.toLowerCase().includes("españa") ||
+      country.toLowerCase().includes("spain") ||
+      country.toLowerCase().includes("es")
+    ) {
       const fallbackUrls = await this.getFallbackUrls(sector, country, targetCount);
       if (fallbackUrls.length > 0) {
-        console.log(`[LeadService] ⚡ Using curated directory for ${sector} in ${country}: ${fallbackUrls.length} companies (instant - 0ms)`);
-        return fallbackUrls;
+        console.log(
+          `[LeadService] ⚡ Using curated directory for ${sector} in ${country}: ${fallbackUrls.length} companies (instant - 0ms)`
+        );
+        // We'll still attempt to top-up with web search if we need more
       }
     }
 
-    // Primary: Use web search to extract official homepages for companies in the sector/country
-    try {
-      console.log(`[LeadService] 🔍 Attempting web search for ${targetCount} ${sector} companies in ${country}...`);
-      const schema = {
-        type: "object",
-        properties: {
-          urls: { type: "array", items: { type: "string" } },
-        },
-        required: ["urls"],
-      } as const;
+    // 1) Primary: Firecrawl SEARCH (no scraping). Build multiple queries to improve recall.
+    console.log(
+      `[LeadService] 🔍 WebSearch-only mode: discovering ${targetCount} ${sector} companies in ${country}...`
+    );
 
-      const prompt = `List ${targetCount} official company homepages for the ${sector} sector ${
-        country && country !== "Global" ? "in " + country : ""
-      }. Only include real company root websites (no social profiles, no directories). Return as 'urls'.`;
+    const queries: string[] = [];
+    const sectorQ = sector.toLowerCase();
+    const countryQ = country && country !== "Global" ? country : "";
+    // Spanish variants and generic patterns
+    queries.push(
+      `${sectorQ} consultoría B2B ${countryQ}`.trim(),
+      `consultora ${sectorQ} empresas ${countryQ}`.trim(),
+      `servicios profesionales ${sectorQ} ${countryQ}`.trim(),
+      `agencia ${sectorQ} B2B ${countryQ}`.trim(),
+      `${sectorQ} empresas ${countryQ}`.trim()
+    );
 
-      const searchStart = Date.now();
-      
-      // TIMEOUT REDUCIDO: 20s max para web search (fallback rápido)
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Web search timeout after 20s")), 20000)
-      );
-      
-      const extractPromise = app.extract({
-        urls: [],
-        schema,
-        prompt,
-        enableWebSearch: true,
-        timeout: 18000, // 18s interno de Firecrawl
-      });
-      
-      const res = await Promise.race([extractPromise, timeoutPromise]);
-      console.log(`[LeadService] ✅ Web search completed in ${Date.now() - searchStart}ms`);
-
-      const urls = Array.from(
-        new Set(
-          ((res as any)?.data?.urls || [])
-            .filter((u: string) =>
-              typeof u === "string" &&
-              /^https?:\/\//i.test(u) &&
-              !u.includes("facebook.com") &&
-              !u.includes("twitter.com") &&
-              !u.includes("instagram.com") &&
-              !u.includes("linkedin.com/feed")
-            )
-            .map((u: string) => u.replace(/\/$/, ""))
-        )
-      ).slice(0, targetCount);
-
-      if (urls.length > 0) {
-        console.log(`[LeadService] ✅ Found ${urls.length} valid URLs via web search`);
-        return urls as string[];
+    const urlsSet = new Set<string>();
+    const start = Date.now();
+    for (const q of queries) {
+      try {
+        const res: any = await app.search(q, { limit: Math.min(10, targetCount) });
+        const items: any[] = res?.results || res?.data || [];
+        for (const it of items) {
+          const u = (it?.url || it)?.toString?.() || "";
+          if (
+            /^https?:\/\//i.test(u) &&
+            !u.includes("facebook.com") &&
+            !u.includes("twitter.com") &&
+            !u.includes("instagram.com") &&
+            !u.includes("linkedin.com/feed")
+          ) {
+            // normalize to root
+            try {
+              const d = new URL(u);
+              const root = `${d.protocol}//${d.hostname}`;
+              urlsSet.add(root.replace(/\/$/, ""));
+            } catch {}
+          }
+        }
+        if (urlsSet.size >= targetCount) break;
+      } catch (e: any) {
+        console.warn(`[LeadService] 🔎 Search query failed ('${q}'):` , e?.message || e);
       }
-      console.log(`[LeadService] ⚠️ Web search returned 0 URLs, trying fallback...`);
-    } catch (e: any) {
-      console.warn(`[LeadService] ❌ Web search failed: ${e?.message || e}, trying fallback...`);
+    }
+    console.log(`[LeadService] ✅ Web search completed in ${Date.now() - start}ms with ${urlsSet.size} unique roots`);
+
+    // 2) If still not enough, attempt curated fallback to reach target
+    let urls: string[] = Array.from(urlsSet);
+    if (urls.length < targetCount) {
+      const fallbackUrls = await this.getFallbackUrls(sector, country, targetCount);
+      for (const f of fallbackUrls) {
+        if (!urls.includes(f)) urls.push(f);
+        if (urls.length >= targetCount) break;
+      }
     }
 
-    // Fallback: Hardcoded URLs for common sectors (faster alternative)
-    console.log(`[LeadService] � Using fallback: Hardcoded directory for ${sector} in ${country}`);
-    
-    const fallbackUrls = await this.getFallbackUrls(sector, country, targetCount);
-    if (fallbackUrls.length > 0) {
-      console.log(`[LeadService] ✅ Fallback provided ${fallbackUrls.length} URLs`);
-      return fallbackUrls;
-    }
-
-    console.log(`[LeadService] ❌ All discovery methods failed, returning empty array`);
-    return [];
+    return urls.slice(0, targetCount);
   }
   
   /**
@@ -236,144 +232,69 @@ export class LeadIntelligenceService {
     return urls.slice(0, targetCount);
   }
 
-  private static async extractBatch(
-    app: FirecrawlApp,
+  private static async buildLeadsFromSearch(
     urls: string[],
     sector: string,
-    useCase: string
+    useCase: string,
+    country: string
   ): Promise<QualifiedLeadType[]> {
-    if (urls.length === 0) {
-      console.log(`[LeadService] ⚠️ No URLs to extract from, returning empty array`);
-      return [];
-    }
+    if (urls.length === 0) return [];
 
-    console.log(`[LeadService] 📊 Starting batch extraction for ${urls.length} URLs...`);
-    
-    // Schema for extraction aligned to what we need to populate our schema
-    const extractionSchema = z.object({
-      company_name: z.string().describe("Official company name"),
-      website: z.string().optional(),
-      industry: z.string().optional(),
-      revenue_estimate: z.string().optional(),
-      employee_count: z.string().optional(),
-      location: z.string().optional(),
-      funding_status: z.string().optional(),
-      technology_stack: z.array(z.string()).optional(),
-      growth_indicators: z.array(z.string()).optional(),
-      decision_maker_name: z.string().optional(),
-      decision_maker_title: z.string().optional(),
-      decision_maker_linkedin: z.string().optional(),
-      decision_maker_email: z.string().optional(),
-      decision_maker_phone: z.string().optional(),
-      pain_points: z.array(z.string()).optional(),
-      opportunity_estimated_deal_size: z.string().optional(),
-      opportunity_probability: z.enum(["high", "medium", "low"]).optional(),
-      opportunity_timeline: z.string().optional(),
-      competition: z.array(z.string()).optional(),
-      primary_channel: z.enum(["email", "linkedin", "phone", "referral"]).optional(),
-      personalization_hooks: z.array(z.string()).optional(),
-      key_messaging: z.string().optional(),
-      call_to_action: z.string().optional(),
-      sources: z.array(z.string()).optional(),
+    const leads: QualifiedLeadType[] = urls.map((site) => {
+      const host = new URL(site).hostname.replace("www.", "");
+      const companyName = host.split(".")[0]?.replace(/-/g, " ") || host;
+      const qualified: QualifiedLeadType = {
+        company: {
+          company_name: companyName.charAt(0).toUpperCase() + companyName.slice(1),
+          website: site,
+          industry: sector,
+          revenue_estimate: "Unknown",
+          employee_count: "Unknown",
+          location: country || "Unknown",
+          technology_stack: [],
+          growth_indicators: [],
+        },
+        decision_maker: {
+          name: undefined,
+          title: "Director",
+          linkedin_url: undefined,
+          email: undefined,
+          phone: undefined,
+          seniority_level: "Director",
+          department: "Operations",
+        },
+        qualification: {
+          budget_score: 5,
+          authority_score: 5,
+          need_score: 5,
+          timeline_score: 5,
+          overall_fit_score: 5,
+          qualification_notes: `Derived from web search result for ${host}`,
+        },
+        pain_points: [],
+        opportunity_details: {
+          estimated_deal_size: "€10k-50k",
+          probability: "medium",
+          timeline: "2-3 months",
+          competition: [],
+        },
+        outreach_strategy: {
+          primary_channel: "email",
+          personalization_hooks: [],
+          key_messaging: `How we help with ${useCase}`,
+          call_to_action: "15-min intro call",
+        },
+        data_sources: ["Firecrawl Web Search"],
+        priority: "medium",
+        last_updated: new Date().toISOString(),
+      };
+      qualified.qualification.overall_fit_score = calculateLeadScore(
+        qualified.qualification
+      );
+      return qualified;
     });
 
-    const out: QualifiedLeadType[] = [];
-
-    // Process sequentially in small batches to respect rate limits
-    const batchSize = 4;
-    for (let i = 0; i < urls.length; i += batchSize) {
-      const batch = urls.slice(i, i + batchSize);
-      console.log(`[LeadService] 🔄 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(urls.length/batchSize)} (${batch.length} URLs)...`);
-
-      const batchStart = Date.now();
-      const res = await app.extract({
-        urls: batch,
-        prompt:
-          "Extract B2B prospecting data: company details, a likely decision maker, contact info if present, and concrete pain points/opportunities relevant to sales outreach.",
-        schema: extractionSchema as unknown as Record<string, unknown>,
-        showSources: true,
-        timeout: 30000,
-      });
-      console.log(`[LeadService] ✅ Batch ${Math.floor(i/batchSize) + 1} completed in ${Date.now() - batchStart}ms`);
-
-      const data = (res as any)?.data as any[] | undefined;
-      if (!data) {
-        console.warn(`[LeadService] ⚠️ Batch ${Math.floor(i/batchSize) + 1} returned no data`);
-        continue;
-      }
-
-      for (let j = 0; j < data.length; j++) {
-        const d = data[j] || {};
-        const site = batch[j];
-
-        const qualified: QualifiedLeadType = {
-          company: {
-            company_name: d.company_name || new URL(site).hostname.replace("www.", ""),
-            website: d.website || site,
-            industry: d.industry || sector,
-            revenue_estimate: d.revenue_estimate || "Unknown",
-            employee_count: d.employee_count || "Unknown",
-            location: d.location || "Unknown",
-            funding_status: d.funding_status,
-            technology_stack: d.technology_stack || [],
-            growth_indicators: d.growth_indicators || [],
-          },
-          decision_maker: {
-            name: d.decision_maker_name,
-            title: d.decision_maker_title || "Director",
-            linkedin_url: d.decision_maker_linkedin,
-            email: d.decision_maker_email,
-            phone: d.decision_maker_phone,
-            seniority_level: (d.decision_maker_title || "Director").toLowerCase().includes("c")
-              ? "C-level"
-              : (d.decision_maker_title || "Director").toLowerCase().includes("vp")
-              ? "VP"
-              : (d.decision_maker_title || "Director").toLowerCase().includes("director")
-              ? "Director"
-              : "Manager",
-            department: "Operations",
-          },
-          qualification: {
-            budget_score: d.revenue_estimate ? 8 : 5,
-            authority_score: d.decision_maker_title ? 7 : 5,
-            need_score: (d.pain_points?.length || 0) > 0 ? 7 : 5,
-            timeline_score: 6,
-            overall_fit_score: 6,
-            qualification_notes: `Auto-qualified from website ${site}`,
-          },
-          pain_points: d.pain_points || [],
-          opportunity_details: {
-            estimated_deal_size: d.opportunity_estimated_deal_size || "€10k-50k",
-            probability: d.opportunity_probability || "medium",
-            timeline: d.opportunity_timeline || "2-3 months",
-            competition: d.competition || [],
-          },
-          outreach_strategy: {
-            primary_channel: d.primary_channel || "email",
-            personalization_hooks: d.personalization_hooks?.slice(0, 3) || [],
-            key_messaging: d.key_messaging || `How we help with ${useCase}`,
-            call_to_action: d.call_to_action || "15-min intro call",
-          },
-          data_sources: ["Company website", ...(d.sources || [])],
-          priority: "high",
-          last_updated: new Date().toISOString(),
-        };
-
-        // update score after mapping
-        qualified.qualification.overall_fit_score = calculateLeadScore(qualified.qualification);
-
-        out.push(qualified);
-      }
-      console.log(`[LeadService] ✅ Processed ${data.length} leads from batch ${Math.floor(i/batchSize) + 1}, total leads: ${out.length}`);
-
-      if (i + batchSize < urls.length) {
-        console.log(`[LeadService] ⏳ Waiting 1.5s before next batch (rate limiting)...`);
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-    }
-
-    console.log(`[LeadService] 🎯 Extraction complete: ${out.length} total leads extracted`);
-    return out;
+    return leads;
   }
 
   private static defaultOutreachTemplates(useCase: string): OutreachTemplateType[] {

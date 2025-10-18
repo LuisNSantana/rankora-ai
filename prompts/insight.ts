@@ -1,279 +1,245 @@
 /**
- * System prompt for premium business insight analysis.
- * LLM-First Architecture (2025): Grok as core reasoning engine, enriched by external APIs.
- * Optimized for Grok-4-fast with 2M context window - focused, concise, insight-driven.
+ * CrispBaconAI – Insight Prompt Builders
+ * Project: Rankora AI
+ *
+ * This module centralizes high-quality prompt builders used by the insight generation API.
+ * It supports two initial productized report types:
+ *  A) SEO & Content Opportunity
+ *  B) Competitor & Pricing Intelligence
+ *
+ * Conventions:
+ * - Professional English tone, concise and executive-friendly
+ * - Always request JSON that conforms to BusinessInsight schema (legacy + v2 premium)
+ * - Require evidence (sources/quotes) for sensitive claims
+ * - Encourage visualizations with real data, not placeholders
+ */
+
+export const CRISPBACON_BRAND = "CrispBaconAI";
+export const CRISPBACON_LOGO = "/crispbacon1.png"; // Use in UI while steps execute
+
+// Small util: clamp large strings to reduce token bloat in prompts
+function clamp(str: string, max = 3000): string {
+  if (!str) return "";
+  return str.length > max ? str.slice(0, max) + "\n…[truncated]" : str;
+}
+
+// Format a compact view of scraping items (url + short excerpt)
+function formatScrapingItems(scrapingData: any[] = [], max = 8): string {
+  const items = scrapingData.slice(0, max).map((s, i) => {
+    const url = s?.url || s?.input?.url || s?.sources?.[0]?.url || "";
+    const title = s?.title || s?.input?.title || s?.sources?.[0]?.title || "Untitled";
+    const text = clamp(String(s?.answer_text || s?.output || s?.content || ""), 500);
+    return `- [${i + 1}] ${title} (${url})\n  Excerpt: ${text}`;
+  });
+  return items.length ? items.join("\n") : "- (no structured scraping items provided)";
+}
+
+/**
+ * Global system prompt for insight generation using Grok/OpenAI.
+ * Establishes brand, quality bar, and output constraints.
  */
 export function systemPromptForInsights(): string {
   return `
-Eres un estratega senior de McKinsey/BCG. Tu misión: sintetizar datos complejos en insights accionables para C-level executives.
+You are a senior strategy consultant (McKinsey/BCG level). Your mission: turn data into decisions.
 
-Marca y agente: La app se llama "CrispBaconAI" y el agente también es "CrispBaconAI". Cuando incluyas cabeceras o notas de autoría, usa la marca CrispBaconAI y, cuando aplique, referencia visual al logo (crispbacon1.png).
+Brand and agent: "${CRISPBACON_BRAND}". When appropriate, sign or reference the brand. For visuals, remember the logo (${CRISPBACON_LOGO}).
 
-# CAPACIDADES CORE
-- **Análisis estratégico:** SWOT, Porter's Five Forces, BCG Matrix con scoring fundamentado
-- **Proyecciones financieras:** Modelos best/base/worst con assumptions explícitos
-- **Priorización ROI-driven:** Impact vs. Effort scoring para todas las iniciativas  
-- **Identificación de gaps:** Oportunidades competitivas no-obvias y de alto valor
+# Style
+- Direct, quantified, no fluff. Executive language.
+- Every recommendation: Action + Impact + Timeline + Owner + Risk.
+- Always cite sources (specific URLs) for sensitive claims.
 
-# ESTILO Y CALIDAD
-- **Directo y cuantificado:** Cada afirmación con números específicos (%, €, fechas)
-- **Sin jerga ni fluff:** Lenguaje ejecutivo claro, evita tecnicismos innecesarios
-- **Accionable:** Cada recomendación = Acción concreta + Impacto medible + Timeline + Owner
-- **Rich Markdown:** Jerarquía visual clara con emojis estratégicos, bullets, tablas
+# Expected structures
+- KPIs/Metrics with unit and benchmark where applicable.
+- Prioritization by impact/effort. ROI if possible.
+- Visualizations with real data (no placeholders).
 
-# PROCESO DE RAZONAMIENTO (Chain-of-Thought)
-
-Antes de generar el report, RAZONA paso a paso:
-
-1. **SÍNTESIS:** ¿Qué patrones clave emergen de market context + competitive data + lead opportunities?
-2. **GAPS:** ¿Qué información crítica falta? ¿Cómo inferirla con assumptions razonables?
-3. **INSIGHTS NO-OBVIOS:** ¿Qué hallazgos de alto impacto NO son evidentes a simple vista?
-4. **QUICK WINS:** ¿Qué acciones tienen ROI >3x y se pueden ejecutar en <3 meses?
-5. **RIESGOS:** ¿Qué assumptions o factores externos podrían invalidar las recomendaciones?
-
-# EJEMPLOS DE CALIDAD (Few-Shot Learning)
-
-## ❌ HALLAZGO GENÉRICO (evitar):
-"El mercado está creciendo y hay oportunidades de expansión."
-
-## ✅ HALLAZGO ESPECÍFICO (objetivo):
-"TAM de €2.4B creciendo 23% YoY (Perplexity). Nuestro SAM (€180M) representa oportunidad de 4x vs. penetración actual del 12%. Competidor líder (Acme Corp) tiene 28% market share con pricing 40% premium según Firecrawl, indicando disposición del mercado a pagar por features enterprise."
-
-## ❌ RECOMENDACIÓN VAGA (evitar):
-"Mejorar la estrategia de pricing para aumentar ingresos."
-
-## ✅ RECOMENDACIÓN ACCIONABLE (objetivo):
-**ACCIÓN:** Lanzar tier Enterprise a €499/mes (vs. actual €299 Pro)
-**JUSTIFICACIÓN:** 34% de leads cualificados tienen budget >€500/mes (Firecrawl lead intel)
-**IMPACTO:** +€2.1M ARR en 12 meses (asumiendo 15% conversion de 470 Enterprise leads)
-**TIMELINE:** Q1 2026 - Product development (6 sem) + Sales enablement (2 sem)
-**OWNER:** Product Manager + RevOps Director
-**RIESGO:** Canibalización del 8% de clientes Pro actuales (mitigable con grandfather clause)
-
-# SCORING FRAMEWORKS (para objetividad)
-
-Para cada recomendación, calcula:
-- **Impact Score** = (Revenue potential € × Probability %) / 10,000
-- **Effort Score** = (Time weeks × Resources FTE) / 5  
-- **Priority** = Impact / Effort (solo incluye si Priority > 2.0)
-
-# OUTPUT JSON STRUCTURE
-
-Genera JSON válido conformando BusinessInsight schema con:
-- **Executive summary:** Rich Markdown, 3 hallazgos cuantificados, strategic implications
-- **Metrics:** Todos los KPIs con values, units, trends, benchmarks
-- **Recommendations:** Priorizadas por Impact/Effort con scoring explícito
-- **Visualizations:** Mínimo 6-10 charts/tables con datos reales (NO placeholders)
-- **Sources:** URLs específicas de Perplexity/Firecrawl/Lead Intel
-
-**IDIOMA:** Español profesional | **TONO:** Consultoría estratégica | **EVIDENCIA:** Cada claim respaldada por data | **BRANDING:** Firma como "CrispBaconAI" cuando corresponda.
+# Required output
+- Return valid JSON conforming to BusinessInsight (legacy) and enrich with premium v2 if enough data (roadmap, financials, competitive frameworks).
+- Language: English.
 `.trim();
 }
 
-function serializeSources(sources: Array<{ source?: string; url?: string }>): string[] {
-  const unique = new Set<string>();
-  sources.forEach(src => {
-    if (src.source) unique.add(src.source.trim());
-    if (src.url) unique.add(src.url.trim());
-  });
-  return Array.from(unique).filter(Boolean);
+/**
+ * A) SEO & Content Opportunity – Prompt builder
+ * Goal: identify content opportunities, gaps, quick wins, and a 30/60/90 roadmap, with evidence.
+ */
+export function buildSeoOpportunityPrompt(params: {
+  entity?: string;
+  country?: string;
+  sector?: string;
+  size?: string;
+  researchDepth?: "basic" | "standard" | "deep";
+  enableLiveSearch?: boolean;
+  scrapingData?: any[];
+}): string {
+  const { entity, country, sector, size, researchDepth = "deep", enableLiveSearch = true, scrapingData = [] } = params || {};
+  const scope = [
+    entity ? `Entity: ${entity}` : null,
+    country ? `Country: ${country}` : null,
+    sector ? `Sector: ${sector}` : null,
+    size ? `Size: ${size}` : null,
+    `Depth: ${researchDepth}`,
+    `Live Search: ${enableLiveSearch ? "yes" : "no"}`,
+  ].filter(Boolean).join(" · ");
+
+  return `
+## CONTEXT
+${scope}
+
+We have structured scraping data and/or prior research:
+${formatScrapingItems(scrapingData)}
+
+## OBJECTIVE
+Generate an SEO & content opportunity report that includes:
+- Content gaps and clusters by intent (awareness → decision)
+- 10–20 opportunities prioritized by impact/effort
+- Key metrics (estimated search volume, relative difficulty, traffic/revenue potential)
+- Actionable recommendations with steps and estimated impact
+- 30/60/90-day roadmap (quick wins first)
+- Visualizations (min. 6): bar/line/table for clusters, total impact, prioritization, timeline/calendar
+- Cited sources (specific URLs) and relevant quotes
+
+## CONDITIONS
+- Quantify everything possible (%, #, $). Include benchmarks where helpful.
+- Do not invent URLs. If evidence is missing, indicate uncertainty or use "confidence_level: low".
+- Forbid placeholders in visualizations; if no data, omit that chart.
+
+## JSON OUTPUT (BusinessInsight)
+- type: "seo_content_opportunity"
+- summary (executive)
+- metrics[] (name, value, unit, benchmark)
+- recommendations[] (title, description, priority, expected_impact, effort_required, implementation_steps[], evidence[])
+- visualizations[] (bar/line/table, real data)
+- sources[] (unique URLs)
+- meta.summary_points, meta.confidence_level
+- premium.roadmap (30/60/90 with ActionItem)
+`.trim();
 }
 
 /**
- * Builds a user prompt for converting scraping results into a premium BusinessInsight (V2).
- * LLM-First: Data context focused, minimal structural instructions.
+ * B) Competitor & Pricing Intelligence – Prompt builder
+ * Goal: competitive landscape, feature/pricing comparisons, Porter, BCG, and positioning playbook.
  */
-export function buildInsightAnalysisPrompt(scrapingData: any[]): string {
-  const formatted = scrapingData.map((s, index) => ({
-    id: index + 1,
-    prompt: s.prompt || s.input || "",
-    answer_text: s.answer_text || s.output || s.answer || "",
-    sources: s.sources || s.input?.sources || [],
-    url: s.url || s.input?.url || "",
-    timestamp: s.timestamp || new Date().toISOString(),
-  }));
+export function buildCompetitorPricingPrompt(params: {
+  entity?: string;
+  country?: string;
+  sector?: string;
+  size?: string;
+  researchDepth?: "basic" | "standard" | "deep";
+  enableLiveSearch?: boolean;
+  scrapingData?: any[];
+}): string {
+  const { entity, country, sector, size, researchDepth = "deep", enableLiveSearch = true, scrapingData = [] } = params || {};
+  const scope = [
+    entity ? `Entity: ${entity}` : null,
+    country ? `Country: ${country}` : null,
+    sector ? `Sector: ${sector}` : null,
+    size ? `Size: ${size}` : null,
+    `Depth: ${researchDepth}`,
+    `Live Search: ${enableLiveSearch ? "yes" : "no"}`,
+  ].filter(Boolean).join(" · ");
 
-  const flattenedSources = formatted.flatMap(item => item.sources || []).map((src: any) => ({
-    source: typeof src === "string" ? src : src?.source || src?.title,
-    url: src?.url,
-  }));
+  return `
+## CONTEXT
+${scope}
 
-  return `# MISIÓN
-Genera un Business Insight Report ejecutivo con análisis estratégico profundo, recomendaciones priorizadas y visualizaciones basadas en datos reales.
+Relevant data (competition/pricing/features):
+${formatScrapingItems(scrapingData)}
 
-# DATA SOURCES (${formatted.length} entries)
+## OBJECTIVE
+Deliver a competitive and pricing analysis that contains:
+- Profiles of 3–6 competitors (leader/challenger/niche), estimated market share (if applicable)
+- Feature comparison table (parity vs differentiators) with pros/cons
+- Pricing table (plans, limits, add-ons) with positioning notes
+- Porter Five Forces with overall attractiveness (1–5) and evidence
+- BCG matrix (stars/cash cows/question marks/dogs) for our lines vs competitors if applicable
+- Positioning and pricing recommendations (counter-moves, upsell, bundling)
+- Visualizations (min. 6): comparisons, differentiator radar, impact waterfall
+- Cited sources and quotes
 
-## Research & Market Context
-${JSON.stringify(formatted, null, 2)}
+## CONDITIONS
+- Prioritize accuracy: if pricing data is missing, provide an estimated range and mark as "confidence: low".
+- Do not invent share metrics without trace; be explicit with assumptions.
+- Avoid placeholders in charts.
 
-## Available Source URLs
-${JSON.stringify(serializeSources(flattenedSources), null, 2)}
-
-# OUTPUT REQUIREMENTS
-
-Devuelve **SOLO JSON válido** conformando el schema BusinessInsight:
-
-\`\`\`typescript
-{
-  // CORE FIELDS (required)
-  "type": "string (clients|sales|marketing|product|general)",
-  "summary": "string (Executive summary en Rich Markdown, 2-3 párrafos con hallazgos cuantificados)",
-  "summary_points": ["string (3-5 key bullets con métricas específicas)"],
-  "metrics": [
-    {
-      "name": "string",
-      "value": "number|string", 
-      "unit": "string?",
-      "trend": "up|down|flat?",
-      "benchmark": "number|string?",
-      "percentile": "number?"
-    }
-  ],
-  "recommendations": [
-    {
-      "title": "string (acción concreta)",
-      "description": "string (DEBE incluir: acción + justificación + impacto cuantificado + timeline + owner)",
-      "priority": "critical|high|medium|low",
-      "estimated_impact": "low|medium|high|very_high",
-      "estimated_effort": "low|medium|high|very_high",
-      "timeline": "string (ej: Q1 2026, 0-3 meses, 6 semanas)"
-    }
-  ],
-  "visualizations": [
-    {
-      "type": "bar|line|pie|table|text|waterfall|funnel|heatmap|scatter|radar",
-      "title": "string",
-      "subtitle": "string?",
-      "data": "any (DATOS REALES del scraping, NO placeholders)",
-      "insights": ["string (interpretación de la visualización)"]?
-    }
-  ],
-  "sources": ["string (URLs de las fuentes)"],
-  "generated_at": "ISO-8601 timestamp",
-  
-  // META (optional but recommended)
-  "meta": {
-    "analysis_type": "market_analysis|competitive_intelligence|feasibility_study|strategic_review|financial_analysis|business_case|growth_strategy",
-    "industry": "string?",
-    "geography": "string?",
-    "key_themes": ["string (max 5)"],
-    "confidence_level": "high|medium|low"
-  },
-  
-  // PREMIUM V2 STRUCTURE (optional - incluye si hay datos suficientes)
-  "premium": {
-    "executive_summary": {
-      "overview": "string",
-      "key_findings": ["string"],
-      "strategic_implications": "string",
-      "recommended_actions": ["string"]
-    },
-    "strategic_analysis": {
-      "swot": { /* Strengths, Weaknesses, Opportunities, Threats con scoring */ },
-      "porter_five_forces": { /* 5 forces con score 1-5 y justificación */ },
-      "bcg_matrix": { /* Stars, Cash Cows, Question Marks, Dogs */ }
-    },
-    "market_intelligence": {
-      "market_size": { /* TAM, SAM, SOM con assumptions */ },
-      "competitors": [ /* Top 5 con positioning, share, strengths */ ],
-      "competitive_advantages": [ /* Ventajas sostenibles */ ],
-      "market_trends": [ /* Tendencias con impact */ ]
-    },
-    "financial_analysis": {
-      "projections": [ /* Best/Base/Worst scenarios */ ],
-      "cost_structure": { /* Fixed, Variable, Drivers */ },
-      "unit_economics": { /* CAC, LTV, Ratios, Payback */ }
-    },
-    "roadmap": {
-      "phases": [ /* 30/60/90 day plans */ ]
-    },
-    "risk_assessment": {
-      "risks": [ /* Probability, Impact, Mitigation */ ]
-    }
-  }
-}
-\`\`\`
-
-# QUALITY CHECKLIST
-
-✅ **Metrics:** Extrae TODOS los valores numéricos del scraping (min 5-10 metrics)
-✅ **Visualizations:** Mínimo 6-8 diferentes usando datos reales (NO ejemplos genéricos)
-✅ **Recommendations:** Cada una ESPECÍFICA con impacto cuantificado y timeline
-✅ **Sources:** Lista TODAS las URLs scraped
-✅ **Consistency:** Proyecciones coherentes con métricas actuales
-✅ **Specificity:** Nombres reales (empresas, productos, personas, cifras exactas)
-
-# VALIDATION
-
-- Verifica que cada visualización contenga datos del scraping (no placeholders)
-- Asegura que métricas sumen/promedien correctamente
-- Cruza que recomendaciones se basen en insights del análisis
-- Confirma que sources incluyan URLs reales
-
-Genera el JSON ahora.`.trim();
+## JSON OUTPUT (BusinessInsight)
+- type: "competitor_pricing_intel"
+- summary (executive)
+- metrics[] (include competitive KPIs)
+- recommendations[] (include playbook and prioritization)
+- visualizations[] (comparisons and analyses)
+- sources[] (unique URLs)
+- meta.summary_points, meta.confidence_level
+- premium: porter_five_forces, bcg_matrix (if applicable), roadmap
+`.trim();
 }
 
 /**
- * Builds a user prompt for converting document content into a premium BusinessInsight (V2).
- * LLM-First: Document context focused, minimal structural instructions.
+ * Generic: build a prompt from scraping to convert into BusinessInsight (fallback minimal/standard/premium is handled by the route).
  */
-export function buildDocInsightAnalysisPrompt(documents: Array<{
-  source: string;
-  content: string;
-  pageCount?: number;
-  type?: string;
-}>): string {
-  const formatted = documents.map((doc, index) => ({
-    id: index + 1,
-    filename: doc.source,
-    type: doc.type || "unknown",
-    pageCount: doc.pageCount,
-    content: doc.content,
-  }));
+export function buildInsightAnalysisPrompt(scrapingData: any[] = []): string {
+  return `
+## AVAILABLE DATA (scraping)
+${formatScrapingItems(scrapingData, 12)}
 
-  return `# MISIÓN
-Genera un Business Insight Report ejecutivo basado en el análisis profundo de los documentos proporcionados.
+## TASK
+Synthesize the information into a business insight with:
+- summary (executive with 3 quantified findings)
+- metrics[] (name, value, unit, benchmark)
+- recommendations[] (actionable, prioritized by impact/effort)
+- visualizations[] (6–10, no placeholders)
+- sources[] (unique and relevant URLs)
+- meta (summary_points, confidence_level)
+- optional premium: 30/60/90 roadmap, competitive frameworks, financial analysis if data exists.
 
-# DOCUMENTACIÓN (${formatted.length} files)
-${JSON.stringify(formatted, null, 2)}
+## RULES
+- Professional English, concise.
+- Cite exact URLs for evidence. If missing, mark uncertainty.
+- Valid JSON (no comments), conforming to BusinessInsight.
+`.trim();
+}
 
-# OUTPUT REQUIREMENTS
+// Optional helper: tiny factory by type
+export type InsightTypeKey = "seo_content_opportunity" | "competitor_pricing_intel";
 
-Devuelve **SOLO JSON válido** conformando BusinessInsight schema (igual al formato de scraping analysis).
+export function buildPromptByType(type: InsightTypeKey, args: Parameters<typeof buildSeoOpportunityPrompt>[0]): string {
+  if (type === "seo_content_opportunity") return buildSeoOpportunityPrompt(args);
+  if (type === "competitor_pricing_intel") return buildCompetitorPricingPrompt(args);
+  return buildInsightAnalysisPrompt(args.scrapingData);
+}
 
-# FOCUS AREAS
+/**
+ * Document-based: build a prompt from uploaded documents to produce a BusinessInsight JSON.
+ * Accepts array of { source, content, pageCount?, type?, size? }.
+ */
+export function buildDocInsightAnalysisPrompt(docs: Array<{ source: string; content: string; pageCount?: number; type?: string; size?: number; }> = []): string {
+  const list = (docs || []).slice(0, 12).map((d, i) => {
+    const meta: string[] = [];
+    if (d.pageCount) meta.push(`${d.pageCount}p`);
+    if (d.type) meta.push(String(d.type));
+    if (d.size) meta.push(`${Math.round(d.size / 1024)}KB`);
+    const excerpt = clamp(d.content || "", 800);
+    return `- [${i + 1}] ${d.source}${meta.length ? ` (${meta.join(" · ")})` : ""}\n  Excerpt: ${excerpt}`;
+  }).join("\n");
 
-**Prioridades críticas:**
-1. Identifica oportunidades de crecimiento medibles con revenue potential específico
-2. Evalúa viabilidad financiera y unit economics (CAC, LTV, payback period)
-3. Construye roadmap 30/60/90 días con milestones cuantificados
-4. Señala riesgos regulatorios/operativos con probability/impact scoring
+  return `
+## AVAILABLE DOCUMENTS
+${list || "- (no documents provided)"}
 
-**Visualizaciones esperadas (min 6-8):**
-- Tabla comparativa de alternativas/competidores (con datos reales del doc)
-- Waterfall de contribución financiera o cost structure breakdown
-- Matriz riesgo vs. probabilidad (risk assessment)
-- Funnel o cohortes si hay datos de conversión/pipeline
-- Gráfico de proyecciones financieras (best/base/worst scenarios)
-- Heatmap de priorización (Impact vs. Effort matrix)
+## TASK
+Synthesize the provided documents into a decision-ready business insight with:
+- summary (executive with 3 quantified findings)
+- metrics[] (name, value, unit, benchmark)
+- recommendations[] (actionable, prioritized by impact/effort; include steps and risks)
+- visualizations[] (6–10, real data only; omit if unavailable)
+- sources[] (unique URLs or document identifiers)
+- meta (summary_points, confidence_level)
+- optional premium: 30/60/90 roadmap, competitive frameworks, financials if data exists.
 
-# QUALITY REQUIREMENTS
-
-✅ **Extrae TODOS los números:** Métricas, KPIs, financials, dates, percentages
-✅ **Sé específico:** Nombres reales de empresas, productos, personas, lugares
-✅ **Recommendations accionables:** Cada una con ROI estimado, timeline, owner asignado
-✅ **Assumptions explícitos:** Para proyecciones y estimaciones
-✅ **Cross-reference:** Liga métricas → recomendaciones → riesgos
-✅ **Sources accuracy:** Lista filenames exactos
-
-# VALIDATION
-
-- NO inventes datos: Si falta info, usa campos opcionales vacíos
-- Verifica coherencia numérica (ej: proyecciones alineadas con baseline)
-- Asegura que visualizaciones deriven de datos reales del documento
-- Confirma que cada recomendación tenga impacto medible
-
-**IDIOMA:** Español profesional | **DELIVERABLE:** Business case listo para consejo directivo
-
-Genera el JSON ahora.`.trim();
+## RULES
+- Professional English, concise, evidence-based.
+- Cite exact sources or document references for sensitive claims.
+- Return valid JSON only (no comments) conforming to BusinessInsight.
+`.trim();
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { BusinessInsight } from "@/lib/insights-schema";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDateTime } from "@/lib/status-utils";
@@ -59,6 +60,10 @@ export default function SummaryHeader({ insight }: SummaryHeaderProps) {
           {/* Title & meta */}
           <div className="space-y-3 flex-1">
             <div className="flex items-start gap-3">
+              {/* Brand mark */}
+              <div className="relative w-10 h-10 hidden sm:block">
+                <Image src="/crispbacon1.png" alt="CrispBacon" fill className="object-contain" />
+              </div>
               <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400/30 to-pink-500/30 dark:from-amber-500/20 dark:to-pink-600/20 border border-amber-500/30 dark:border-amber-500/40 shadow-sm">
                 <Lightbulb className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               </div>

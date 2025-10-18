@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Buffer } from "node:buffer";
+import os from "node:os";
 import chromium from "@sparticuz/chromium";
-import puppeteer from "puppeteer-core";
+import puppeteer from "puppeteer"; // Changed from puppeteer-core to full puppeteer
 
 import { BusinessInsightSchema } from "@/lib/insights-schema";
 import { renderInsightReportHTML } from "@/lib/pdf/renderInsightReport";
@@ -9,22 +10,64 @@ import { renderInsightReportHTML } from "@/lib/pdf/renderInsightReport";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+/**
+ * Launch browser with environment-aware strategy:
+ * - Development/macOS: Use puppeteer's bundled Chromium (cross-platform compatible)
+ * - Production/AWS Lambda: Use @sparticuz/chromium (optimized for serverless)
+ */
 async function launchBrowser() {
+  const platform = os.platform();
+  const isDevelopment = process.env.NODE_ENV === "development" || platform === "darwin";
+  
   try {
-    // Full @sparticuz/chromium includes binaries, no need for env vars
+    if (isDevelopment) {
+      // Development mode: Use puppeteer's bundled Chromium
+      // This works on macOS, Windows, and Linux without any binary issues
+      console.log(`[PDF] 🚀 Launching puppeteer bundled Chromium (${platform})`);
+      
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+        ],
+        defaultViewport: { width: 1920, height: 1080 },
+      });
+      
+      console.log("[PDF] ✅ Puppeteer bundled Chromium launched successfully");
+      return browser;
+    }
+    
+    // Production mode: Use @sparticuz/chromium for AWS Lambda
+    console.log("[PDF] 🚀 Launching @sparticuz/chromium (production/serverless)");
     const executablePath = await chromium.executablePath();
-
-    return await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: {
-        width: 1920,
-        height: 1080,
-      },
+    console.log("[PDF] Chromium executable path:", executablePath);
+    
+    const browser = await puppeteer.launch({
+      args: [
+        ...chromium.args,
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+      defaultViewport: { width: 1920, height: 1080 },
       executablePath,
-      headless: "shell", // Use headless shell mode
+      headless: true,
     });
-  } catch (e) {
-    console.warn("Failed to launch Chromium for PDF generation:", e);
+    
+    console.log("[PDF] ✅ @sparticuz/chromium launched successfully");
+    return browser;
+  } catch (e: any) {
+    console.error("[PDF] ❌ Failed to launch browser:", e?.message || e);
+    console.error("[PDF] Error details:", {
+      code: e?.code,
+      errno: e?.errno,
+      platform,
+      nodeEnv: process.env.NODE_ENV,
+    });
     return null;
   }
 }
@@ -85,16 +128,15 @@ export async function POST(request: NextRequest) {
           await browser.close();
         }
       }
-      
-      // If browser fails, return validation error details
-      return NextResponse.json(
-        { 
-          message: "Schema validation failed - using fallback generation", 
-          issues: parsed.error.issues.slice(0, 5), // Limit issues for readability
-          hint: "The insight structure may be from Grok-4-fast and needs schema adaptation"
+      // If browser launch failed, return HTML as a graceful fallback
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Disposition": "inline; filename=fallback_rankora_insight.html",
+          "Cache-Control": "no-store",
         },
-        { status: 400 }
-      );
+      });
     }
 
     const insight = parsed.data;
@@ -126,7 +168,7 @@ export async function POST(request: NextRequest) {
         await browser.close();
       }
     }
-    // Fallback: return HTML if Chromium unavailable
+    // Fallback: return HTML if headless browser unavailable (client will open in new tab)
     return new NextResponse(html, {
       status: 200,
       headers: {
